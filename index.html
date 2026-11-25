@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#2c5cff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>TripKit Checklist</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap">
+<style>
+/* VOICE: calm, practical travel companion; a tool that opens mid-use.
+   IDEA: a boarding pass + a spreadsheet — the pass shows the trip, the grid holds the details.
+   PICTURE: cobalt boarding-pass card with route, dates, countdown and four live progress meters.
+   COLOUR and TYPE: white ground, near-black ink, cobalt #2c5cff field, stamp red for warnings; Geist.
+   LAYOUT: pass on top, segmented tabs, then a sheet-like editable grid; stacks naturally on phones. */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0f1012);--panel:light-dark(#f4f4f2,#18191c);--ink:light-dark(#16171a,#ededee);
+--mute:light-dark(#6b6d72,#9a9ca1);--line:light-dark(rgba(0,0,0,.08),rgba(255,255,255,.09));
+--accent:light-dark(#2c5cff,#5b7dff);--accent-ink:#fff;--stamp:light-dark(#d93a3f,#ff6b6f);
+--ok:light-dark(#2c5cff,#7b96ff);--shadow:0 1px 2px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.06);
+--ease-out:cubic-bezier(.23,1,.32,1);--ease-io:cubic-bezier(.77,0,.175,1)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Geist,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+.wrap{max-width:1100px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 40px max(16px,env(safe-area-inset-left))}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brand{font-weight:700;font-size:17px;letter-spacing:-.01em;margin-right:auto;display:flex;align-items:center;gap:8px}
+.brand svg{width:26px;height:26px}
+.status{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:6px}
+.status i{width:7px;height:7px;border-radius:50%;background:#2fb36b;display:inline-block}
+.status.off i{background:var(--stamp)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;border:0;background:var(--panel);font-weight:500;font-size:15px;transition:transform .16s var(--ease-out),background-color .16s}
+.btn:active{transform:scale(.97)}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--stamp)}
+.btn:focus-visible,.chip:focus-visible,.tab:focus-visible,.chk:focus-visible,.meter:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media(hover:hover) and (pointer:fine){.btn:hover{background:light-dark(#ebebe8,#222327)}.btn.pri:hover{background:light-dark(#2350ea,#6f8cff)}}
+
+/* boarding pass */
+.pass{position:relative;background:var(--accent);color:var(--accent-ink);border-radius:20px;padding:20px 22px 18px;box-shadow:0 10px 30px -12px rgba(44,92,255,.55);overflow:hidden}
+.meters::before,.meters::after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:var(--bg);top:-12px}
+.meters::before{left:-33px}.meters::after{right:-33px}
+[hidden]{display:none!important}
+.pass-head{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.pass-name{font-size:15px;opacity:.85;font-weight:500}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:12.5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.18);white-space:nowrap}
+.route{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;margin:12px 0 4px}
+.route b{display:block;font-size:clamp(26px,6vw,44px);line-height:1.05;font-weight:700;letter-spacing:-.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.route small{font-size:13px;opacity:.75}
+.route .to{text-align:right}
+.route .mid{display:grid;justify-items:center;gap:2px}.route svg{width:clamp(56px,12vw,120px);height:24px;opacity:.9}.route .mid small{white-space:nowrap;opacity:.9}
+.when{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;opacity:.9;margin-bottom:16px}
+.when span{white-space:nowrap}
+.meters{position:relative;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;border-top:2px dashed rgba(255,255,255,.35);padding-top:14px}
+.meter{background:rgba(255,255,255,.12);border:0;border-radius:12px;padding:9px 10px;text-align:left;color:inherit;transition:transform .16s var(--ease-out),background-color .16s}
+.meter:active{transform:scale(.97)}
+.meter.on{background:rgba(255,255,255,.26)}
+.meter span{font-size:12.5px;opacity:.85;display:block}
+.meter b{font-size:17px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.meter .bar{height:4px;border-radius:4px;background:rgba(255,255,255,.25);margin-top:6px;overflow:hidden}
+.meter .bar i{display:block;height:100%;background:#fff;border-radius:4px;transform-origin:left;transition:transform .4s var(--ease-out)}
+
+/* tabs */
+.tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;margin-top:6px}
+.seg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);background:var(--panel);border-radius:12px;padding:3px}
+.seg .ind{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/4);background:var(--bg);border-radius:9px;box-shadow:var(--shadow);transition:transform .28s var(--ease-out)}
+.tab{position:relative;border:0;background:none;min-height:40px;font-weight:500;font-size:15px;color:var(--mute);transition:color .2s}
+.tab.on{color:var(--ink)}
+.tab small{font-variant-numeric:tabular-nums;opacity:.7;margin-left:4px;font-size:12.5px}
+
+/* toolbar */
+.tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px}
+.search{flex:1 1 200px;min-height:40px;border-radius:10px;border:0;background:var(--panel);padding:0 12px;font-size:16px;outline:none}
+.search:focus{box-shadow:0 0 0 2px var(--accent)}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;margin-bottom:4px}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:0;background:var(--panel);border-radius:999px;padding:6px 12px;font-size:14px;min-height:34px;white-space:nowrap;transition:transform .16s var(--ease-out),background-color .16s,color .16s}
+.chip:active{transform:scale(.97)}
+.chip.on{background:var(--ink);color:var(--bg)}
+.chip small{opacity:.65;margin-left:4px;font-variant-numeric:tabular-nums}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:var(--mute);min-height:40px;padding:0 4px;cursor:pointer;user-select:none}
+.toggle input{width:18px;height:18px;accent-color:var(--accent)}
+.prog{font-size:14px;color:var(--mute);margin:2px 0 8px;font-variant-numeric:tabular-nums}
+
+/* grid */
+.gwrap{overflow-x:auto;border-radius:14px;box-shadow:0 0 0 1px var(--line);background:var(--bg)}
+table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
+.g th{position:sticky;top:0;text-align:left;font-weight:500;font-size:13px;color:var(--mute);background:var(--panel);padding:8px 10px;white-space:nowrap;user-select:none;border-bottom:1px solid var(--line)}
+.g th.s{cursor:pointer}
+.g th .ar{opacity:.4;margin-left:3px}
+.g th.sorted .ar{opacity:1;color:var(--accent)}
+.g td{border-bottom:1px solid var(--line);padding:0;height:44px;vertical-align:middle;background:var(--bg)}
+.g td+td{border-left:1px solid var(--line)}
+.g tr:last-child td{border-bottom:0}
+.g td.ck,.g th.ck{width:44px;min-width:44px;max-width:44px;text-align:center;position:sticky;left:0;z-index:1}
+.g td.x,.g th.x{width:40px;text-align:center}
+.g td.ck2,.g th.ck2{left:44px;box-shadow:1px 0 0 var(--line),4px 0 8px -6px rgba(0,0,0,.25)}.g th.ck{z-index:2;text-align:center;padding:8px 0}.g th.act{color:var(--accent);font-weight:600}
+.addcol{width:30px;height:30px;border:0;border-radius:8px;background:var(--bg);color:var(--mute);font-size:18px;line-height:1;box-shadow:0 0 0 1px var(--line);transition:transform .16s var(--ease-out),color .16s}
+.addcol:active{transform:scale(.92)}
+@media(hover:hover) and (pointer:fine){.addcol:hover{color:var(--accent)}}
+.legbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.seg2.leg{display:inline-grid;grid-template-columns:auto auto}
+.seg2.leg button{border:0;background:none;padding:8px 14px;border-radius:8px;font-size:15px;min-height:38px;transition:background-color .16s,transform .16s var(--ease-out)}
+.seg2.leg button:active{transform:scale(.97)}
+.seg2.leg button.on{background:var(--bg);box-shadow:var(--shadow);font-weight:600}
+.chip.miss.on{background:var(--stamp);color:#fff}
+.colrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center}
+.colrow input{min-height:40px;border:0;border-radius:10px;background:var(--panel);padding:0 12px;font-size:16px;outline:none}
+.colrow input:focus{box-shadow:0 0 0 2px var(--accent)}
+.g input,.g select{width:100%;height:44px;border:0;background:transparent;padding:0 10px;font-size:16px;outline:none;border-radius:0}
+.g input:focus,.g select:focus{box-shadow:inset 0 0 0 2px var(--accent);background:light-dark(#f7f9ff,#151a2b)}
+.g input.n,.g td.calc{text-align:right;font-variant-numeric:tabular-nums}
+.g td.calc{padding:0 10px;color:var(--mute);white-space:nowrap;font-size:15px}
+.g td.calc.warn{color:var(--stamp)}
+.g tr.done input:not([type=date]):not([type=time]){color:var(--mute);text-decoration:line-through;text-decoration-color:var(--line)}
+.g td.exp-warn input{color:var(--stamp)}
+@media(pointer:fine){.g input,.g select{font-size:14.5px}.g td{height:38px}.g input,.g select{height:38px}}
+.chk{width:28px;height:28px;border-radius:8px;border:0;background:transparent;display:inline-grid;place-items:center;padding:0;transition:transform .16s var(--ease-out)}
+.chk:active{transform:scale(.9)}
+.chk span{width:20px;height:20px;border-radius:6px;box-shadow:inset 0 0 0 1.5px light-dark(rgba(0,0,0,.28),rgba(255,255,255,.3));display:grid;place-items:center;transition:background-color .16s,box-shadow .16s}
+.chk svg{width:14px;height:14px;stroke:#fff;stroke-width:3;fill:none;stroke-dasharray:20;stroke-dashoffset:20;transition:stroke-dashoffset .2s var(--ease-out)}
+.chk[aria-pressed=true] span{background:var(--ok);box-shadow:none}
+.chk[aria-pressed=true] svg{stroke-dashoffset:0}
+.del{width:32px;height:32px;border:0;background:none;border-radius:8px;color:var(--mute);font-size:20px;line-height:1;opacity:.55;transition:opacity .16s,transform .16s var(--ease-out)}
+.del:active{transform:scale(.9)}
+@media(hover:hover) and (pointer:fine){.del{opacity:0}tr:hover .del,.del:focus-visible{opacity:.8}.del:hover{color:var(--stamp)}}
+.addrow{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.hint{font-size:13px;color:var(--mute)}
+.empty{padding:28px 16px;text-align:center;color:var(--mute);font-size:15px}
+
+/* money summary */
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.kpi{background:var(--panel);border-radius:14px;padding:12px 14px}
+.kpi span{font-size:13px;color:var(--mute);display:block}
+.kpi b{font-size:clamp(17px,3.4vw,24px);font-variant-numeric:tabular-nums;white-space:nowrap;letter-spacing:-.01em;display:block;overflow:hidden;text-overflow:ellipsis}
+.kpi.neg b{color:var(--stamp)}
+.kpi .bar,.cat .bar{height:6px;border-radius:6px;background:var(--line);margin-top:8px;overflow:hidden}
+.kpi .bar i,.cat .bar i{display:block;height:100%;background:var(--accent);border-radius:6px;transition:width .4s var(--ease-out)}
+.kpi.neg .bar i{background:var(--stamp)}
+.mgrid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px;margin-bottom:12px}
+.box{background:var(--panel);border-radius:14px;padding:12px 14px}
+.box h3{margin:0 0 8px;font-size:14px;font-weight:600}
+.cat{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;font-size:14px;margin-bottom:8px}
+.cat b{font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cat .bar{grid-column:1/-1;margin-top:2px;height:5px}
+.rate{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:6px;white-space:nowrap}
+.rate input{width:110px;min-height:36px;border:0;border-radius:8px;background:var(--bg);padding:0 8px;font-size:16px;text-align:right;font-variant-numeric:tabular-nums}
+.rate input:focus{outline:2px solid var(--accent)}
+.rate.miss input{box-shadow:0 0 0 1.5px var(--stamp)}
+
+/* sheet / dialog */
+.ov{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.35);opacity:0;transition:opacity .2s var(--ease-out);display:none}
+.ov.show{display:block}.ov.open{opacity:1}
+.sheet{position:fixed;z-index:21;left:50%;top:50%;width:min(520px,calc(100vw - 24px));max-height:min(86vh,760px);overflow:auto;background:var(--bg);border-radius:18px;padding:18px;box-shadow:0 24px 60px -12px rgba(0,0,0,.35);opacity:0;transform:translate(-50%,-48%) scale(.96);transition:opacity .2s var(--ease-out),transform .2s var(--ease-out);display:none}
+.sheet.show{display:block}.sheet.open{opacity:1;transform:translate(-50%,-50%) scale(1)}
+@media(max-width:600px){.sheet{top:auto;bottom:0;left:0;width:100%;border-radius:18px 18px 0 0;transform:translateY(100%);padding-bottom:max(18px,env(safe-area-inset-bottom))}.sheet.open{transform:translateY(0)}}
+.sheet h2{margin:0 0 12px;font-size:20px;letter-spacing:-.01em}
+.f{display:grid;gap:4px;margin-bottom:12px}
+.f label{font-size:13px;color:var(--mute)}
+.f input,.f select,.f textarea{min-height:44px;border:0;border-radius:10px;background:var(--panel);padding:0 12px;font-size:16px;outline:none;width:100%}
+.f textarea{padding:10px 12px;min-height:120px;resize:vertical;font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.f input:focus,.f select:focus,.f textarea:focus{box-shadow:0 0 0 2px var(--accent)}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.seg2{display:grid;grid-template-columns:1fr 1fr;background:var(--panel);border-radius:10px;padding:3px;gap:3px}
+.seg2 input{position:absolute;opacity:0;pointer-events:none}
+.seg2 label{text-align:center;padding:9px;border-radius:8px;font-size:15px;color:var(--ink);cursor:pointer;transition:background-color .16s}
+.seg2 input:checked+label{background:var(--bg);box-shadow:var(--shadow);font-weight:500}
+.seg2 input:focus-visible+label{outline:2px solid var(--accent)}
+.acts{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.tlist{display:grid;gap:6px;margin-bottom:14px}
+.titem{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;background:var(--panel);border-radius:12px;padding:10px 12px;border:0;text-align:left;width:100%;transition:transform .16s var(--ease-out)}
+.titem:active{transform:scale(.98)}
+.titem.on{box-shadow:inset 0 0 0 2px var(--accent)}
+.titem b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.titem small{color:var(--mute);font-size:13px}
+.titem em{font-style:normal;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.sep{height:1px;background:var(--line);margin:14px 0}
+.note{font-size:13px;color:var(--mute);margin:0 0 10px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:30;display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--bg);padding:10px 10px 10px 16px;border-radius:12px;font-size:14.5px;box-shadow:0 12px 30px -8px rgba(0,0,0,.4);transform:translate(-50%,calc(100% + 30px));opacity:0;transition:transform .3s var(--ease-out),opacity .3s var(--ease-out);max-width:calc(100vw - 24px)}
+.toast.open{transform:translate(-50%,0);opacity:1}
+.toast button{border:0;background:rgba(127,127,127,.25);color:inherit;border-radius:8px;padding:6px 10px;font-weight:600;font-size:14px}
+.sample{font-size:12.5px;color:var(--mute);margin:8px 2px 0}
+
+@media(max-width:600px){
+ .meters{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sum{grid-template-columns:1fr 1fr}.sum .kpi:last-child{grid-column:1/-1}
+ .mgrid{grid-template-columns:1fr}
+ .tab{font-size:14px}.tab small{display:none}
+ .route b{font-size:24px}.route svg{width:44px}.route{gap:8px}
+ .status span{display:none}
+}
+/* help + tour */
+.btn.icon{width:40px;padding:0;font-weight:700;font-size:16px}
+.help h3{font-size:15px;margin:16px 0 4px}
+.help p,.help li{font-size:15px;line-height:1.5;margin:0 0 6px}
+.help ul{padding-left:18px;margin:0 0 6px}
+.help kbd{font:600 12.5px/1 inherit;background:var(--panel);border-radius:5px;padding:3px 6px;box-shadow:inset 0 -1px 0 var(--line);white-space:nowrap}
+.help .lead{display:flex;gap:10px;align-items:center;background:var(--panel);border-radius:14px;padding:12px 14px;margin-bottom:6px}
+.help .lead p{margin:0;flex:1}
+#tourBlock{position:fixed;inset:0;z-index:40}
+#tourHi{position:fixed;z-index:41;border-radius:12px;pointer-events:none;box-shadow:0 0 0 2px var(--accent),0 0 0 9999px rgba(10,12,20,.55);transition:top .3s var(--ease-out),left .3s var(--ease-out),width .3s var(--ease-out),height .3s var(--ease-out)}
+#tourPop{position:fixed;z-index:42;width:min(330px,calc(100vw - 24px));background:var(--bg);color:var(--ink);border-radius:16px;padding:16px;box-shadow:0 20px 50px -10px rgba(0,0,0,.45);opacity:0;transform:translateY(6px);transition:opacity .2s var(--ease-out),transform .2s var(--ease-out),top .3s var(--ease-out),left .3s var(--ease-out)}
+#tourPop.open{opacity:1;transform:none}
+#tourPop h4{margin:0 0 6px;font-size:17px;letter-spacing:-.01em}
+#tourPop p{margin:0 0 14px;font-size:15px;line-height:1.5;color:var(--ink)}
+#tourPop .tf{display:flex;align-items:center;gap:6px}
+#tourPop .tf span{font-size:13px;color:var(--mute);margin-right:auto;font-variant-numeric:tabular-nums}
+#tourPop .dots{display:flex;gap:4px;margin:0 0 12px}
+#tourPop .dots i{height:4px;flex:1;border-radius:4px;background:var(--line);transition:background-color .2s}
+#tourPop .dots i.on{background:var(--accent)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <header class="top">
+  <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2c5cff"/><path d="M9 17l4 4 10-10" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>TripKit</div>
+  <div class="status" id="status"><i></i><span>Saved on this device</span></div>
+  <button class="btn" id="installBtn" hidden>Install</button>
+  <button class="btn icon" id="helpBtn" aria-label="Help and guided tour" title="Help">?</button>
+  <button class="btn" id="tripsBtn">Trips</button>
+ </header>
+ <section id="pass"></section>
+ <nav class="tabs"><div class="seg" id="seg" role="tablist"></div></nav>
+ <main id="panel"></main>
+</div>
+<div class="ov" id="ov"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+ <div id="tourBlock" hidden></div><div id="tourHi" hidden></div><div id="tourPop" role="dialog" aria-live="polite" hidden></div>
+<div class="toast" id="toast" role="status"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
+<input type="file" id="fileIn" accept="application/json,.json" hidden>
+
+<script>
+{
+const KEY='tripkit.v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Math.random().toString(36).slice(2,10);
+const num=v=>{const n=parseFloat(String(v??'').replace(/[^\d.\-]/g,''));return isNaN(n)?0:n};
+const todayISO=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
+
+const STAGES=['Before departure','At departure','In transit','On arrival','Return trip'];
+const TABS=[{k:'pack',l:'Packing',m:'Packed'},{k:'docs',l:'Documents',m:'Docs'},{k:'plan',l:'Itinerary',m:'Plan'},{k:'money',l:'Money',m:'Budget'}];
+const MCATS=['Transport','Lodging','Food','Activities','Shopping','Work','Other'];
+const COLS={
+ pack:[{k:'done',t:'check',l:'Go'},{k:'back',t:'check',l:'Back'},{k:'name',l:'Item',w:180},{k:'cat',l:'Category',list:['Clothes','Toiletries','Electronics','Health','Work','Essentials','Misc'],w:120},{k:'qty',l:'Qty',t:'num',w:64},{k:'bag',l:'Bag',list:['Carry-on','Checked','Backpack','Wear it'],w:110},{k:'note',l:'Notes',w:160}],
+ docs:[{k:'done',t:'check',l:'Go'},{k:'back',t:'check',l:'Back'},{k:'name',l:'Document / task',w:220},{k:'stage',l:'When needed',list:STAGES,w:150},{k:'exp',l:'Expires',t:'date',w:140},{k:'note',l:'Number / notes',w:170}],
+ plan:[{k:'done',t:'check'},{k:'date',l:'Date',t:'date',w:140},{k:'time',l:'Time',t:'time',w:104},{k:'name',l:'Place / activity',w:200},{k:'area',l:'Area / address',w:150},{k:'cost',l:'Est. cost',t:'num',w:100},{k:'note',l:'Notes',w:150}],
+ money:[{k:'date',l:'Date',t:'date',w:140},{k:'name',l:'Description',w:180},{k:'type',l:'Type',t:'select',opts:['Spent','Brought'],w:104},{k:'cat',l:'Category',list:MCATS,w:120},{k:'amt',l:'Amount',t:'num',w:110},{k:'cur',l:'Cur',w:70,list:['IDR','CNY','SGD','USD','JPY','EUR','MYR','THB','HKD']},{k:'home',l:'In home cur',t:'calc',w:130}]
+};
+const CK=(tab,t=trip())=>tab==='plan'?'done':(t.leg==='back'?'back':'done');
+function colsFor(t,tab){const base=COLS[tab],cu=(t.cols?.[tab]||[]).map(c=>({k:c.k,l:c.l,t:c.t==='num'||c.t==='date'?c.t:undefined,w:120,custom:true}));return tab==='money'?[...base.slice(0,-1),...cu,base.at(-1)]:[...base,...cu]}
+const GROUP={pack:'cat',docs:'stage',plan:'date',money:'type'};
+const FIRST={pack:'name',docs:'name',plan:'name',money:'name'};
+
+/* ---------- templates ---------- */
+function template(kind,scope,via){
+ const P=(name,cat,bag='Checked',qty='')=>({name,cat,bag,qty});
+ const D=(name,stage,note='')=>({name,stage,note});
+ const abroad=scope==='abroad',biz=kind==='business';
+ const pack=[P('Phone + charger','Electronics','Carry-on'),P('Power bank','Electronics','Carry-on'),P('Earphones','Electronics','Carry-on'),
+  P('Wallet, cards, some cash','Essentials','Carry-on'),P('Underwear','Clothes','Checked','4'),P('Socks','Clothes','Checked','4'),P('T-shirts / tops','Clothes','Checked','3'),P('Sleepwear','Clothes'),
+  P('Toothbrush + toothpaste','Toiletries'),P('Deodorant','Toiletries'),P('Personal medication','Health','Carry-on'),P('Basic meds (pain, stomach, plasters)','Health'),
+  P('Reusable water bottle','Essentials','Carry-on'),P('Umbrella / rain jacket','Essentials')];
+ if(abroad)pack.push(P('Universal power adapter','Electronics','Carry-on'),P('eSIM / roaming activated','Electronics','Carry-on'),P('Foreign cash for first day','Essentials','Carry-on'),P('Pen for arrival forms','Essentials','Carry-on'));
+ if(biz)pack.push(P('Laptop + charger','Work','Carry-on'),P('Business cards','Work','Carry-on'),P('Formal outfit','Clothes','Checked','2'),P('Dress shoes','Clothes'),P('Presentation (offline copy)','Work','Carry-on'),P('HDMI / USB-C adapter','Work','Carry-on'),P('Notebook + pen','Work','Carry-on'));
+ else pack.push(P('Swimwear','Clothes'),P('Sunscreen','Toiletries'),P('Sunglasses','Essentials','Carry-on'),P('Comfortable walking shoes','Clothes','Wear it'),P('Hat','Clothes'),P('Day bag','Essentials'),P('Camera + memory card','Electronics','Carry-on'));
+ const docs=[];
+ if(abroad)docs.push(D('Passport (valid 6+ months, blank pages)','Before departure'),D('Visa / entry permit — check rules for your passport','Before departure'),D('Travel insurance policy','Before departure'),D('Tell your bank you will be abroad','Before departure'));
+ else docs.push(D('ID card (KTP) / national ID','Before departure'));
+ docs.push(D('Flight / train e-ticket','Before departure'),D('Hotel booking confirmation','Before departure'),D('Copies of key documents (cloud + paper)','Before departure'),D('Driving licence (if renting a vehicle)','Before departure'));
+ if(biz)docs.push(D('Assignment letter (surat tugas) / invitation letter','Before departure'),D('Meeting agenda + contacts','Before departure'),D('Company travel & expense policy','Before departure'));
+ if(via){docs.push(D(`Connecting boarding pass for ${via} leg`,'In transit','Ask at first check-in for both boarding passes'),D('Confirm bags are checked through to final stop','In transit','Check the tag shows the final airport code'),D('Transit time + terminal / gate','In transit'),D('Stay airside unless you plan to clear immigration','In transit'));
+  pack.push(P('Liquids under 100 ml in clear bag (re-screened in transit)','Toiletries','Carry-on'))}
+ docs.push(D('Online check-in / boarding pass','At departure'),D(abroad?'Passport in hand':'ID in hand','At departure'),D('Baggage claim tags','At departure'));
+ if(abroad)docs.push(D('Arrival / customs declaration of destination','On arrival','Often an online form with a QR code'),D('Return or onward ticket (may be checked)','On arrival'),D('Embassy + emergency numbers','On arrival'));
+ docs.push(D('Address of first night’s stay','On arrival'),D('Local transport card / ride app','On arrival'),D('Return boarding pass','Return trip'));
+ if(abroad)docs.push(D('Home customs / arrival declaration','Return trip'));
+ if(biz)docs.push(D('Receipts for expense claim','Return trip'));
+ return {pack:pack.map(r=>({id:uid(),done:false,note:'',...r})),docs:docs.map(r=>({id:uid(),done:false,exp:'',...r}))};
+}
+
+/* ---------- your trip: Jakarta → Singapore → Shenzhen ---------- */
+function shenzhen(){
+ const t=template('business','abroad','Singapore');
+ const P=(name,cat,bag='Carry-on')=>({id:uid(),done:false,note:'',qty:'',name,cat,bag});
+ const D=(name,stage,note='')=>({id:uid(),done:false,exp:'',name,stage,note});
+ t.pack.push(P('Adapter: China uses type A / I plugs (Singapore type G)','Electronics'),
+  P('Alipay / WeChat Pay set up with your card + verified','Essentials'),
+  P('Roaming / eSIM data that works in China (Google, WhatsApp, Gmail are blocked on local networks)','Electronics'),
+  P('Offline maps (Amap / Gaode) + offline translator downloaded','Electronics'),
+  P('Some CNY cash as backup','Essentials'));
+ const visa=t.docs.find(r=>r.name.startsWith('Visa'));
+ if(visa){visa.name='China visa (L tourist / M business, or 5-year ASEAN business visa)';visa.note='10-day visa-free transit needs an onward ticket to a third country, not back to Indonesia'}
+ const arr=t.docs.find(r=>r.name.startsWith('Arrival / customs'));
+ if(arr){arr.name='China online arrival card (NIA 12367 app / s.nia.gov.cn)';arr.note='Free — only use official channels; paper card also available at the airport';arr.stage='Before departure'}
+ t.docs.push(D('Hotel name + address written in Chinese','On arrival'),D('Metro: Alipay transport QR code activated','On arrival'),
+  D('SG Arrival Card — only if you leave Changi airport','In transit','Not needed if you stay airside'),
+  D('Indonesian customs declaration (All Indonesia)','Return trip'));
+ const R=o=>({id:uid(),done:false,note:'',area:'',cost:'',date:'',time:'',...o});
+ return {id:uid(),seed:'szx',name:'Shenzhen trip',from:'Jakarta',via:'Singapore',to:'Shenzhen',start:'',end:'',kind:'business',scope:'abroad',home:'IDR',rates:{CNY:'',SGD:''},...t,
+  plan:[R({name:'Transit at Changi — find next gate, stay airside',area:'Singapore Changi'}),
+   R({name:'Huaqiangbei electronics markets',area:'Futian'}),
+   R({name:'Ping An Finance Centre — Free Sky observation deck',area:'Futian CBD'}),
+   R({name:'Lianhuashan Park (city view)',area:'Futian'}),
+   R({name:'OCT Loft creative park',area:'Nanshan'}),
+   R({name:'Shenzhen Bay Park sunset walk',area:'Nanshan'}),
+   R({name:'Sea World + Shekou dinner',area:'Shekou, Nanshan'}),
+   R({name:'Dafen Oil Painting Village',area:'Longgang'}),
+   R({name:'Window of the World',area:'Nanshan',note:'Half day'})],
+  money:[{id:uid(),date:todayISO(),name:'Trip budget',type:'Brought',cat:'Other',amt:'',cur:'IDR'},{id:uid(),date:'',name:'CNY cash exchanged',type:'Brought',cat:'Other',amt:'',cur:'CNY'}]};
+}
+
+/* ---------- storage ---------- */
+let canStore=true;
+function load(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null}catch(e){canStore=false;return null}}
+let saveT=0;
+function save(now){clearTimeout(saveT);const go=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));canStore=true}catch(e){canStore=false}setStatus()};now?go():saveT=setTimeout(go,250)}
+let S=load();
+if(!S||!Array.isArray(S.trips)||!S.trips.length){const z=shenzhen();S={v:1,trips:[z],cur:z.id,tab:'docs'}}
+else if(!S.trips.some(t=>t.seed==='szx')){const z=shenzhen();S.trips.unshift(z);S.cur=z.id;S.tab='docs'}
+const view={q:'',hide:false,chip:{},sort:{plan:{k:'date',d:1}}};
+const trip=()=>S.trips.find(t=>t.id===S.cur)||S.trips[0];
+
+/* ---------- formatting ---------- */
+const fmtD=(iso,o={weekday:'short',day:'numeric',month:'short'})=>{if(!iso)return '';const d=new Date(iso+'T00:00');return isNaN(d)?iso:d.toLocaleDateString(undefined,o)};
+function money(n,cur){cur=(cur||'IDR').toUpperCase();const zero=['IDR','JPY','KRW','VND'].includes(cur);try{return new Intl.NumberFormat(undefined,{style:'currency',currency:cur,maximumFractionDigits:zero?0:2,minimumFractionDigits:0}).format(n)}catch(e){return cur+' '+Math.round(n).toLocaleString()}}
+const conv=(t,amt,cur)=>{cur=(cur||t.home).toUpperCase();if(cur===t.home.toUpperCase())return num(amt);const r=num(t.rates?.[cur]);return r?num(amt)*r:null};
+
+/* ---------- stats ---------- */
+function stats(t){
+ const c=(a,k)=>({d:a.filter(r=>r[k]).length,n:a.length});
+ let br=0,sp=0,miss=false;const cats={};
+ for(const r of t.money){const v=conv(t,r.amt,r.cur);if(v===null){if(num(r.amt))miss=true;continue}
+  if(r.type==='Brought')br+=v;else{sp+=v;const k=r.cat||'Other';cats[k]=(cats[k]||0)+v}}
+ const mi=a=>a.filter(r=>r.done&&!r.back).length;
+ return {pack:c(t.pack,CK('pack',t)),docs:c(t.docs,CK('docs',t)),plan:c(t.plan,'done'),missPack:mi(t.pack),missDocs:mi(t.docs),br,sp,left:br-sp,cats,miss};
+}
+
+/* ---------- render: pass ---------- */
+function renderPass(){
+ const t=trip(),s=stats(t);
+ const days=t.start&&t.end?Math.round((new Date(t.end)-new Date(t.start))/864e5)+1:0;
+ const until=t.start?Math.round((new Date(t.start+'T00:00')-new Date(todayISO()+'T00:00'))/864e5):null;
+ const when=until===null?'':until>1?`Departs in ${until} days`:until===1?'Departs tomorrow':until===0?'Departs today':(t.end&&new Date(t.end+'T00:00')>=new Date(todayISO()+'T00:00'))?'On the trip now':'Trip finished';
+ const pct=o=>o.n?o.d/o.n:0;
+ const used=s.br?Math.min(1,s.sp/s.br):0;
+ const home=t.leg==='back';
+ const m=[['pack',home?'Packed for home':'Packed',`${s.pack.d}/${s.pack.n}`,pct(s.pack)],['docs',home?'Docs for home':'Documents',`${s.docs.d}/${s.docs.n}`,pct(s.docs)],['plan','Itinerary',`${s.plan.d}/${s.plan.n}`,pct(s.plan)],['money','Money left',money(s.left,t.home),s.br?1-used:0]];
+ $('#pass').innerHTML=`<div class="pass">
+  <div class="pass-head"><div class="pass-name">${esc(t.name)}</div><div class="tags">${home?'<span class="tag" style="background:#fff;color:var(--accent)">Going home</span>':''}<span class="tag">${t.kind==='business'?'Business':'Vacation'}</span><span class="tag">${t.scope==='abroad'?'Abroad':'Domestic'}</span></div></div>
+  <div class="route"><div><small>From</small><b>${esc(t.from||'—')}</b></div>
+   <div class="mid"><svg viewBox="0 0 120 24" aria-hidden="true"><path d="M2 12h104" stroke="currentColor" stroke-width="2" stroke-dasharray="4 5"/>${t.via?'<circle cx="54" cy="12" r="5" fill="currentColor"/>':''}<path d="M104 5l12 7-12 7z" fill="currentColor"/></svg></div>
+   <div class="to"><small>To</small><b>${esc(t.to||'—')}</b></div></div>
+  <div class="when">${t.via?`<span>Transit: ${esc(t.via)}</span>`:''}<span>${esc(fmtD(t.start))}${t.end?' – '+esc(fmtD(t.end)):''}</span>${days?`<span>${days} day${days>1?'s':''}</span>`:''}${when?`<span>${when}</span>`:''}</div>
+  <div class="meters">${m.map(([k,l,v,p])=>`<button class="meter${S.tab===k?' on':''}" data-tab="${k}"><span>${l}</span><b>${esc(v)}</b><div class="bar"><i style="transform:scaleX(${p.toFixed(3)})"></i></div></button>`).join('')}</div>
+ </div>`;
+}
+
+/* ---------- render: tabs ---------- */
+function renderTabs(){
+ const t=trip(),s=stats(t),i=TABS.findIndex(x=>x.k===S.tab);
+ $('#seg').innerHTML=`<div class="ind" style="transform:translateX(${i*100}%)"></div>`+TABS.map(x=>{
+  const c=x.k==='money'?t.money.length:`${s[x.k].d}/${s[x.k].n}`;
+  return `<button class="tab${x.k===S.tab?' on':''}" role="tab" aria-selected="${x.k===S.tab}" data-tab="${x.k}">${x.l}<small>${c}</small></button>`}).join('');
+}
+
+/* ---------- render: panel ---------- */
+function rowsFor(tab){
+ const t=trip();let rows=t[tab].slice();
+ const g=GROUP[tab],chip=view.chip[tab];
+ if(chip)rows=rows.filter(r=>(r[g]||'')===chip);
+ const ck=CK(tab,t);
+ if(view.hide&&tab!=='money')rows=rows.filter(r=>!r[ck]);
+ if(view.missing&&t.leg==='back'&&(tab==='pack'||tab==='docs'))rows=rows.filter(r=>r.done&&!r.back);
+ const q=view.q.trim().toLowerCase();
+ if(q)rows=rows.filter(r=>Object.entries(r).some(([k,v])=>k!=='id'&&String(v).toLowerCase().includes(q)));
+ const so=view.sort[tab];
+ if(so){const col=colsFor(t,tab).find(c=>c.k===so.k);const isN=col&&col.t==='num';
+  rows.sort((a,b)=>{const av=a[so.k]??'',bv=b[so.k]??'';
+   if(av===''&&bv!=='')return 1;if(bv===''&&av!=='')return -1;
+   let r=isN?num(av)-num(bv):String(av).localeCompare(String(bv));
+   if(!r&&tab==='plan')r=String(a.time||'').localeCompare(String(b.time||''));
+   return r*so.d})}
+ return rows;
+}
+function cellHTML(tab,c,r,t){
+ const v=r[c.k]??'';
+ if(c.t==='check')return `<td class="ck${c.k==='back'?' ck2':''}"><button class="chk" data-act="chk" data-ck="${c.k}" aria-pressed="${!!r[c.k]}" aria-label="${c.l||'Done'}"><span><svg viewBox="0 0 16 16"><path d="M3 8.5l3.2 3L13 4.5"/></svg></span></button></td>`;
+ if(c.t==='calc'){const h=conv(t,r.amt,r.cur);return `<td class="calc${h===null&&num(r.amt)?' warn':''}" data-calc="${r.id}">${h===null?(num(r.amt)?'Set rate':''):(num(r.amt)?esc(money(h,t.home)):'')}</td>`}
+ if(c.t==='select')return `<td><select data-k="${c.k}" aria-label="${esc(c.l)}">${c.opts.map(o=>`<option${o===v?' selected':''}>${o}</option>`).join('')}</select></td>`;
+ const type=c.t==='date'?'date':c.t==='time'?'time':'text';
+ const warn=c.k==='exp'&&v&&t.end&&new Date(v)<new Date(new Date(t.end).getTime()+182*864e5);
+ return `<td${warn?' class="exp-warn" title="Expires within 6 months of your trip"':''}><input type="${type}" data-k="${c.k}" value="${esc(v)}"${c.t==='num'?' inputmode="decimal" class="n"':''}${c.list?` list="dl-${tab}-${c.k}"`:''} aria-label="${esc(c.l)}" autocomplete="off" spellcheck="false"></td>`;
+}
+function renderPanel(){
+ const t=trip(),tab=S.tab,cols=colsFor(t,tab),g=GROUP[tab],ck=CK(tab,t),two=tab==='pack'||tab==='docs';
+ const all=t[tab],rows=rowsFor(tab);
+ const groups=[];all.forEach(r=>{const v=r[g]||'';if(v&&!groups.includes(v))groups.push(v)});
+ if(tab==='docs')groups.sort((a,b)=>(STAGES.indexOf(a)+99*(STAGES.indexOf(a)<0))-(STAGES.indexOf(b)+99*(STAGES.indexOf(b)<0)));
+ if(tab==='plan')groups.sort();
+ if(view.chip[tab]&&!groups.includes(view.chip[tab]))view.chip[tab]='';
+ const label=v=>tab==='plan'?fmtD(v):v;
+ const cnt=v=>{const a=all.filter(r=>(r[g]||'')===v);return tab==='money'?a.length:`${a.filter(r=>r[ck]).length}/${a.length}`};
+ const chips=groups.length>1?`<div class="chips">${[''].concat(groups).map(v=>`<button class="chip${(view.chip[tab]||'')===v?' on':''}" data-chip="${esc(v)}">${v?esc(label(v)):'All'}${v?`<small>${cnt(v)}</small>`:''}</button>`).join('')}</div>`:'';
+ const s=stats(t);
+ const prog=tab==='money'?'':`<div class="prog" id="prog">${progText(tab,s)}</div>`;
+ const lists=cols.filter(c=>c.list).map(c=>{const vals=[...new Set([...c.list,...all.map(r=>r[c.k]).filter(Boolean)])];return `<datalist id="dl-${tab}-${c.k}">${vals.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`}).join('');
+ const so=view.sort[tab]||{};
+ const head=cols.map(c=>c.t==='check'?`<th class="ck${c.k==='back'?' ck2':''}${two&&c.k===ck?' act':''}">${c.l||''}</th>`:`<th class="s${so.k===c.k?' sorted':''}" data-sort="${esc(c.k)}" style="min-width:${c.w}px">${esc(c.l)}<span class="ar">${so.k===c.k?(so.d>0?'↑':'↓'):'↕'}</span></th>`).join('')+'<th class="x"><button class="addcol" data-act="cols" aria-label="Add or edit columns" title="Add / edit columns">+</button></th>';
+ const body=rows.map(r=>`<tr data-id="${r.id}"${r[ck]?' class="done"':''}>${cols.map(c=>cellHTML(tab,c,r,t)).join('')}<td class="x"><button class="del" data-act="del" aria-label="Delete row">×</button></td></tr>`).join('');
+ const legBar=two?legHTML(t,tab,s):'';
+ const emptyMsg=view.missing&&t.leg==='back'&&two?'Nothing missing — everything you brought is ticked Back.':all.length?'No rows match this filter.':tab==='plan'?'No places yet. Add the spots you want to visit.':'Nothing here yet.';
+ $('#panel').innerHTML=`${tab==='money'?`<div id="msum">${moneySummary(t,s)}</div>`:''}
+  <div class="tools"><input class="search" id="q" type="search" placeholder="Search ${TABS.find(x=>x.k===tab).l.toLowerCase()}…" value="${esc(view.q)}" aria-label="Search">
+  ${tab!=='money'?`<label class="toggle"><input type="checkbox" id="hide"${view.hide?' checked':''}>Hide done</label>`:''}</div>
+  ${legBar}${chips}${prog}
+  <div class="gwrap"><table class="g"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>${rows.length?'':`<div class="empty">${emptyMsg}</div>`}</div>
+  <div class="addrow"><button class="btn pri" data-act="add">+ Add row</button><button class="btn ghost" data-act="cleardone"${tab==='money'?' hidden':''}>Uncheck ${two?(ck==='back'?'Back':'Go'):'all'}</button>
+  <span class="hint">Enter = next row · paste lines from a sheet to add many</span></div>${lists}
+  ${t.seed==='szx'&&!t.start?'<p class="sample">Prefilled for Jakarta → Singapore → Shenzhen. Add your dates in Trips → Edit current, and set CNY / SGD rates in Money.</p>':''}`;
+}
+function legHTML(t,tab,s){
+ const nMiss=tab==='pack'?s.missPack:s.missDocs;
+return `<div class="legbar"><div class="seg2 leg" role="group" aria-label="Which way"><button class="${t.leg!=='back'?'on':''}" data-leg="go">Going</button><button class="${t.leg==='back'?'on':''}" data-leg="back">Going home</button></div>${t.leg==='back'?`<button class="chip miss${view.missing?' on':''}" data-act="missing">Missing${nMiss?`<small>${nMiss}</small>`:''}</button><span class="hint">${nMiss?`${nMiss} brought but not packed back yet`:'Everything you brought is packed back'}</span>`:'<span class="hint">Tick <b>Go</b> now, <b>Back</b> when packing to return</span>'}</div>`;
+}
+function progText(tab,s){const o=s[tab],w={pack:'packed',docs:'ready',plan:'visited'}[tab]+(tab!=='plan'&&trip().leg==='back'?' for the trip home':'');return o.n?`${o.d} of ${o.n} ${w}${o.d===o.n?' — all set':''}`:''}
+function moneySummary(t,s){
+ const used=s.br?Math.min(100,s.sp/s.br*100):0;
+ const cats=Object.entries(s.cats).sort((a,b)=>b[1]-a[1]);const max=cats[0]?.[1]||1;
+ const curs=[...new Set(t.money.map(r=>(r.cur||'').toUpperCase()).filter(c=>c&&c!==t.home.toUpperCase()))];
+ const dd=t.start&&t.end?Math.max(1,Math.round((new Date(t.end)-new Date(t.start))/864e5)+1):0;
+ return `<div class="sum">
+  <div class="kpi"><span>Brought / budget</span><b>${esc(money(s.br,t.home))}</b></div>
+  <div class="kpi"><span>Spent</span><b>${esc(money(s.sp,t.home))}</b></div>
+  <div class="kpi${s.left<0?' neg':''}"><span>${s.left<0?'Over budget':'Left'}${dd&&s.left>0?` · ~${esc(money(s.left/dd,t.home))}/day`:''}</span><b>${esc(money(Math.abs(s.left),t.home))}</b><div class="bar"><i style="width:${used.toFixed(1)}%"></i></div></div></div>
+  <div class="mgrid"><div class="box"><h3>Spent by category</h3>${cats.length?cats.map(([k,v])=>`<div class="cat"><span>${esc(k)}</span><b>${esc(money(v,t.home))}</b><div class="bar"><i style="width:${(v/max*100).toFixed(1)}%"></i></div></div>`).join(''):'<p class="note">Add a “Spent” row to see where money goes.</p>'}</div>
+  <div class="box"><h3>Exchange rates</h3>${curs.length?curs.map(c=>`<div class="rate${num(t.rates?.[c])?'':' miss'}">1 ${esc(c)} = <input data-rate="${esc(c)}" inputmode="decimal" value="${esc(t.rates?.[c]??'')}" aria-label="Rate for ${esc(c)}"> ${esc(t.home)}</div>`).join(''):'<p class="note">Use another currency in the Cur column and set its rate here.</p>'}
+  <p class="note">Home currency: ${esc(t.home)}. Rates are yours to set — they work offline.</p></div></div>`;
+}
+function renderAll(){renderPass();renderTabs();renderPanel();save()}
+function refreshStats(){renderPass();renderTabs();const t=trip(),s=stats(t);const lb=$('.legbar');if(lb)lb.outerHTML=legHTML(t,S.tab,s);const p=$('#prog');if(p)p.textContent=progText(S.tab,s);if(S.tab==='money'){const ms=$('#msum'),a=document.activeElement,rk=a?.dataset?.rate;ms.innerHTML=moneySummary(t,s);if(rk){const el=ms.querySelector(`[data-rate="${CSS.escape(rk)}"]`);if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}}}
+
+/* ---------- row ops ---------- */
+function newRow(tab,from){
+ const t=trip(),r={id:uid()};colsFor(t,tab).forEach(c=>{if(c.t!=='calc')r[c.k]=c.t==='check'?false:''});
+ const g=GROUP[tab];if(view.chip[tab])r[g]=view.chip[tab];
+ if(tab==='plan')r.date=from?.date||view.chip.plan||t.start||'';
+ if(tab==='money'){r.date=from?.date||todayISO();r.type=view.chip.money||'Spent';r.cur=from?.cur||(t.money.at(-1)?.cur)||t.home}
+ if(tab==='docs'&&!r.stage)r.stage=from?.stage||'Before departure';
+ if(tab==='pack'&&from){r.cat=r.cat||from.cat;r.bag=from.bag}
+ return r;
+}
+function addRow(afterId,focusK){
+ const t=trip(),tab=S.tab,arr=t[tab];const i=afterId?arr.findIndex(r=>r.id===afterId):-1;
+ const r=newRow(tab,i>=0?arr[i]:null);
+ if(i>=0)arr.splice(i+1,0,r);else arr.push(r);
+ renderAll();focusCell(r.id,focusK||FIRST[tab]);return r;
+}
+function focusCell(id,k){const el=document.querySelector(`tr[data-id="${id}"] [data-k="${k}"]`);if(el){el.focus();if(el.select&&el.type==='text')el.select();el.scrollIntoView({block:'nearest'})}}
+function delRow(id){
+ const t=trip(),tab=S.tab,arr=t[tab],i=arr.findIndex(r=>r.id===id);if(i<0)return;
+ const [r]=arr.splice(i,1);renderAll();
+ toast(`Deleted “${(r.name||'row').slice(0,28)}”`,'Undo',()=>{arr.splice(i,0,r);renderAll()});
+}
+
+/* ---------- events: panel ---------- */
+const P=$('#panel');
+P.addEventListener('input',e=>{
+ const el=e.target;
+ if(el.id==='q'){view.q=el.value;const pos=el.selectionStart;renderPanel();const q=$('#q');q.focus();q.setSelectionRange(pos,pos);return}
+ if(el.dataset.rate){const t=trip();t.rates=t.rates||{};t.rates[el.dataset.rate]=el.value;save();updCalcs();refreshStats();return}
+ const tr=el.closest('tr[data-id]');if(!tr||!el.dataset.k)return;
+ const r=trip()[S.tab].find(x=>x.id===tr.dataset.id);if(!r)return;
+ r[el.dataset.k]=el.value;save();
+ if(S.tab==='money'){updCalcs();refreshStats()}
+ if(S.tab==='docs'&&el.dataset.k==='exp')el.closest('td').classList.toggle('exp-warn',!!el.value&&new Date(el.value)<new Date(new Date(trip().end).getTime()+182*864e5));
+});
+P.addEventListener('change',e=>{
+ const el=e.target;
+ if(el.id==='hide'){view.hide=el.checked;renderPanel();return}
+ if(el.dataset.k&&el.dataset.k===GROUP[S.tab]||el.dataset.k==='date'&&S.tab==='plan'){renderPass();renderTabs();refreshChips()}
+});
+function refreshChips(){const a=document.activeElement,tr=a?.closest?.('tr[data-id]'),k=a?.dataset?.k;renderPanel();if(tr&&k)focusCell(tr.dataset.id,k)}
+function updCalcs(){const t=trip();document.querySelectorAll('[data-calc]').forEach(td=>{const r=t.money.find(x=>x.id===td.dataset.calc);if(!r)return;const h=conv(t,r.amt,r.cur);td.textContent=h===null?(num(r.amt)?'Set rate':''):(num(r.amt)?money(h,t.home):'');td.classList.toggle('warn',h===null&&!!num(r.amt))})}
+P.addEventListener('click',e=>{
+ const b=e.target.closest('button,th[data-sort]');if(!b)return;
+ if(b.dataset.chip!==undefined){view.chip[S.tab]=b.dataset.chip;renderPanel();return}
+ if(b.dataset.sort){const k=b.dataset.sort,cur=view.sort[S.tab];view.sort[S.tab]=!cur||cur.k!==k?{k,d:1}:cur.d===1?{k,d:-1}:null;renderPanel();return}
+ const act=b.dataset.act,tr=b.closest('tr[data-id]');
+ if(act==='add'){const rows=rowsFor(S.tab);addRow(rows.at(-1)?.id);return}
+ if(act==='del'&&tr){delRow(tr.dataset.id);return}
+ if(act==='chk'&&tr){const k=b.dataset.ck||'done',ck=CK(S.tab),r=trip()[S.tab].find(x=>x.id===tr.dataset.id);r[k]=!r[k];b.setAttribute('aria-pressed',r[k]);tr.classList.toggle('done',!!r[ck]);save();refreshStats();
+  if((view.hide&&r[ck])||(view.missing&&k==='back'))setTimeout(()=>{renderPanel()},380);return}
+ if(b.dataset.leg){trip().leg=b.dataset.leg;view.missing=false;renderAll();toast(b.dataset.leg==='back'?'Going home: tick Back as you pack':'Going: tick Go as you pack');return}
+ if(act==='missing'){view.missing=!view.missing;renderPanel();return}
+ if(act==='cols'){colsSheet();return}
+ if(act==='cleardone'){const k=CK(S.tab),arr=trip()[S.tab],prev=arr.filter(r=>r[k]).map(r=>r.id);if(!prev.length)return;arr.forEach(r=>r[k]=false);renderAll();
+  toast(`Unchecked ${prev.length} items`,'Undo',()=>{arr.forEach(r=>{if(prev.includes(r.id))r[k]=true});renderAll()})}
+});
+P.addEventListener('keydown',e=>{
+ const el=e.target,tr=el.closest('tr[data-id]');if(!tr||!el.dataset.k)return;
+ const k=el.dataset.k,rows=[...P.querySelectorAll('tbody tr[data-id]')],i=rows.indexOf(tr);
+ const move=d=>{const n=rows[i+d];if(n){const x=n.querySelector(`[data-k="${k}"]`);x.focus();if(x.select&&x.type==='text')x.select();return true}return false};
+ if(e.key==='Enter'&&!e.isComposing){e.preventDefault();if(e.shiftKey){move(-1);return}if(!move(1))addRow(tr.dataset.id,FIRST[S.tab])}
+ else if(e.key==='ArrowDown'&&el.type==='text'&&!el.list?.options?.length){if(move(1))e.preventDefault()}
+ else if(e.key==='ArrowUp'&&el.type==='text'&&!el.list?.options?.length){if(move(-1))e.preventDefault()}
+ else if((e.key==='Backspace'||e.key==='Delete')&&(e.metaKey||e.ctrlKey)){e.preventDefault();const nx=rows[i+1]||rows[i-1];delRow(tr.dataset.id);if(nx)focusCell(nx.dataset.id,k)}
+});
+P.addEventListener('paste',e=>{
+ const el=e.target,tr=el.closest?.('tr[data-id]');if(!tr||!el.dataset.k||el.tagName!=='INPUT')return;
+ const txt=(e.clipboardData||window.clipboardData)?.getData('text')||'';if(!/[\n\t]/.test(txt.trim()))return;
+ e.preventDefault();
+ const t=trip(),tab=S.tab,arr=t[tab],cols=colsFor(t,tab).filter(c=>c.t!=='check'&&c.t!=='calc');
+ const start=cols.findIndex(c=>c.k===el.dataset.k);
+ const lines=txt.replace(/\r/g,'').split('\n').filter(l=>l.trim()!=='');
+ let at=arr.findIndex(r=>r.id===tr.dataset.id),first=true,n=0;
+ for(const line of lines){
+  let r;if(first){r=arr[at];first=false}else{r=newRow(tab,arr[at]);arr.splice(++at,0,r)}
+  line.split('\t').forEach((v,j)=>{const c=cols[start+j];if(!c)return;v=v.trim();
+   if(c.t==='select'){const o=c.opts.find(o=>o.toLowerCase()===v.toLowerCase());if(o)r[c.k]=o}
+   else if(c.t==='num')r[c.k]=String(num(v)||'');else r[c.k]=v});n++}
+ renderAll();toast(`Pasted ${n} row${n>1?'s':''}`);
+});
+
+/* ---------- events: pass & tabs ---------- */
+const goTab=k=>{if(!k||k===S.tab)return;S.tab=k;view.q='';renderAll();window.scrollTo({top:Math.min(window.scrollY,$('#pass').offsetHeight+20)})};
+$('#pass').addEventListener('click',e=>goTab(e.target.closest('[data-tab]')?.dataset.tab));
+$('#seg').addEventListener('click',e=>goTab(e.target.closest('[data-tab]')?.dataset.tab));
+$('#seg').addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const i=TABS.findIndex(x=>x.k===S.tab),n=TABS[(i+(e.key==='ArrowRight'?1:3))%4].k;goTab(n);$(`.tab[data-tab="${n}"]`)?.focus()});
+
+/* ---------- sheet ---------- */
+const ov=$('#ov'),sh=$('#sheet');let lastFocus=null;
+function openSheet(html){lastFocus=document.activeElement;sh.innerHTML=html;ov.classList.add('show');sh.classList.add('show');requestAnimationFrame(()=>{ov.classList.add('open');sh.classList.add('open')});setTimeout(()=>sh.querySelector('input:not([type=radio]),button')?.focus({preventScroll:true}),60)}
+function closeSheet(){ov.classList.remove('open');sh.classList.remove('open');setTimeout(()=>{if(!sh.classList.contains('open')){ov.classList.remove('show');sh.classList.remove('show')}},220);lastFocus?.focus?.({preventScroll:true})}
+ov.addEventListener('click',closeSheet);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sh.classList.contains('open'))closeSheet()});
+
+function tripsSheet(){
+ const list=S.trips.map(t=>{const s=stats(t),done=s.pack.d+s.docs.d,n=s.pack.n+s.docs.n;
+  return `<button class="titem${t.id===S.cur?' on':''}" data-pick="${t.id}"><div><b>${esc(t.name)}</b><small>${esc(t.from)} → ${t.via?esc(t.via)+' → ':''}${esc(t.to)} · ${esc(fmtD(t.start,{day:'numeric',month:'short'}))}</small></div><em>${n?Math.round(done/n*100):0}% ready</em></button>`}).join('');
+ openSheet(`<h2>Your trips</h2><div class="tlist">${list}</div>
+  <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-s="new">+ New trip</button><button class="btn" data-s="edit">Edit current</button><button class="btn" data-s="dup">Duplicate</button><button class="btn danger" data-s="del">Delete</button></div>
+  <div class="sep"></div><h2 style="font-size:16px">Backup &amp; share</h2>
+  <p class="note">Everything is stored only in this browser and works offline. Keep a backup before clearing browser data.</p>
+  <div class="acts" style="justify-content:flex-start"><button class="btn" data-s="text">Copy checklist as text</button><button class="btn" data-s="copyjson">Copy backup</button>${framed?'':'<button class="btn" data-s="dl">Download backup</button>'}<button class="btn" data-s="import">Import backup</button></div>`);
+}
+function tripForm(t){
+ const isNew=!t;t=t||{name:'',from:'',to:'',via:'',start:'',end:'',kind:'vacation',scope:'domestic',home:trip()?.home||'IDR'};
+ openSheet(`<h2>${isNew?'New trip':'Edit trip'}</h2><form id="tf">
+  <div class="f"><label for="f-name">Trip name</label><input id="f-name" name="name" required value="${esc(t.name)}" placeholder="e.g. Singapore conference"></div>
+  <div class="row2"><div class="f"><label for="f-from">From</label><input id="f-from" name="from" value="${esc(t.from)}" placeholder="Jakarta"></div><div class="f"><label for="f-to">To</label><input id="f-to" name="to" value="${esc(t.to)}" placeholder="Singapore"></div></div>
+  <div class="f"><label for="f-via">Transit via (optional)</label><input id="f-via" name="via" value="${esc(t.via||'')}" placeholder="e.g. Singapore"></div>
+  <div class="row2"><div class="f"><label for="f-start">Departure</label><input id="f-start" type="date" name="start" value="${esc(t.start)}"></div><div class="f"><label for="f-end">Return</label><input id="f-end" type="date" name="end" value="${esc(t.end)}"></div></div>
+  <div class="f"><label>Purpose</label><div class="seg2"><input type="radio" id="k1" name="kind" value="vacation"${t.kind==='vacation'?' checked':''}><label for="k1">Vacation</label><input type="radio" id="k2" name="kind" value="business"${t.kind==='business'?' checked':''}><label for="k2">Business</label></div></div>
+  <div class="f"><label>Where</label><div class="seg2"><input type="radio" id="s1" name="scope" value="domestic"${t.scope==='domestic'?' checked':''}><label for="s1">Domestic</label><input type="radio" id="s2" name="scope" value="abroad"${t.scope==='abroad'?' checked':''}><label for="s2">Abroad</label></div></div>
+  <div class="f"><label for="f-home">Home currency</label><input id="f-home" name="home" value="${esc(t.home)}" maxlength="3" style="text-transform:uppercase"></div>
+  ${isNew?'<label class="toggle" style="margin-bottom:8px"><input type="checkbox" name="tpl" checked>Prefill packing &amp; document checklist for this kind of trip</label>':''}
+  <div class="acts"><button type="button" class="btn ghost" data-s="close">Cancel</button><button class="btn pri" type="submit">${isNew?'Create trip':'Save'}</button></div></form>`);
+ $('#tf').addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target),o=Object.fromEntries(f);
+  o.home=(o.home||'IDR').toUpperCase().slice(0,3);
+  if(isNew){const tp=o.tpl?template(o.kind,o.scope,o.via):{pack:[],docs:[]};delete o.tpl;const nt={id:uid(),rates:{},plan:[],money:[],...o,...tp};S.trips.push(nt);S.cur=nt.id;S.tab='pack';view.chip={}}
+  else Object.assign(trip(),o);
+  closeSheet();renderAll();save(true);toast(isNew?'Trip created':'Trip saved')});
+}
+function importSheet(){
+ openSheet(`<h2>Import backup</h2><p class="note">Choose a backup file or paste backup text. Trips are added next to the ones you have.</p>
+ <div class="acts" style="justify-content:flex-start;margin-bottom:10px"><button class="btn" data-s="file">Choose file…</button></div>
+ <div class="f"><label for="imp">Backup text</label><textarea id="imp" placeholder='{"trips":[…]}'></textarea></div>
+ <div class="acts"><button class="btn ghost" data-s="close">Cancel</button><button class="btn pri" data-s="doimport">Import</button></div>`);
+}
+function doImport(txt){
+ try{const d=JSON.parse(txt);const ts=Array.isArray(d)?d:d.trips;if(!Array.isArray(ts)||!ts.length)throw 0;
+  const clean=ts.filter(t=>t&&typeof t==='object').map(t=>{const o={id:uid(),name:String(t.name||'Imported trip'),from:String(t.from||''),to:String(t.to||''),via:String(t.via||''),start:String(t.start||''),end:String(t.end||''),kind:t.kind==='business'?'business':'vacation',scope:t.scope==='abroad'?'abroad':'domestic',home:String(t.home||'IDR').slice(0,3).toUpperCase(),rates:{}};
+   for(const[k,v]of Object.entries(t.rates||{}))o.rates[String(k).slice(0,5)]=String(v);
+   o.leg=t.leg==='back'?'back':'go';o.cols={};
+   for(const tab of ['pack','docs','plan','money'])o.cols[tab]=(Array.isArray(t.cols?.[tab])?t.cols[tab]:[]).filter(c=>/^c_[a-z0-9]{1,12}$/.test(c?.k)).map(c=>({k:c.k,l:String(c.l||'Column').slice(0,40),t:['num','date'].includes(c.t)?c.t:'text'}));
+   for(const tab of ['pack','docs','plan','money'])o[tab]=(Array.isArray(t[tab])?t[tab]:[]).map(r=>{const n={id:uid()};colsFor(o,tab).forEach(c=>{if(c.t==='check')n[c.k]=!!r?.[c.k];else if(c.t!=='calc')n[c.k]=String(r?.[c.k]??'')});return n});
+   return o});
+  S.trips.push(...clean);S.cur=clean[0].id;closeSheet();renderAll();save(true);toast(`Imported ${clean.length} trip${clean.length>1?'s':''}`)}
+ catch(e){toast('That doesn’t look like a TripKit backup')}
+}
+function asText(t){
+ const L=[`${t.name} — ${t.from} → ${t.via?t.via+' → ':''}${t.to} (${fmtD(t.start)} – ${fmtD(t.end)})`];
+ const box=r=>(r.done?'[x] ':'[ ] '),box2=r=>`[${r.done?'x':' '}|${r.back?'x':' '}] `;
+ L.push('','PACKING  [Go|Back]');t.pack.forEach(r=>L.push(box2(r)+r.name+(r.qty?` ×${r.qty}`:'')));
+ STAGES.concat([...new Set(t.docs.map(r=>r.stage).filter(s=>!STAGES.includes(s)))]).forEach(st=>{const a=t.docs.filter(r=>(r.stage||'Before departure')===st);if(a.length){L.push('','DOCUMENTS — '+st.toUpperCase());a.forEach(r=>L.push(box2(r)+r.name))}});
+ if(t.plan.length){L.push('','ITINERARY');t.plan.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(r=>L.push(box(r)+[fmtD(r.date),r.time,r.name,r.area&&`(${r.area})`].filter(Boolean).join(' ')))}
+ const s=stats(t);L.push('',`MONEY — brought ${money(s.br,t.home)}, spent ${money(s.sp,t.home)}, left ${money(s.left,t.home)}`);
+ return L.join('\n');
+}
+async function copy(txt,msg){try{await navigator.clipboard.writeText(txt);toast(msg)}catch(e){openSheet(`<h2>Copy this</h2><div class="f"><textarea id="cp" readonly>${esc(txt)}</textarea></div><div class="acts"><button class="btn pri" data-s="close">Done</button></div>`);setTimeout(()=>{const c=$('#cp');c.focus();c.select()},80)}}
+sh.addEventListener('click',e=>{
+ const p=e.target.closest('[data-pick]');if(p){S.cur=p.dataset.pick;view.chip={};view.q='';closeSheet();renderAll();return}
+ const b=e.target.closest('[data-s]');if(!b)return;const a=b.dataset.s,t=trip();
+ if(a==='close')closeSheet();
+ else if(a==='new')tripForm(null);
+ else if(a==='edit')tripForm(t);
+ else if(a==='dup'){const c=JSON.parse(JSON.stringify(t));c.id=uid();c.name=t.name+' (copy)';['pack','docs','plan'].forEach(k=>c[k].forEach(r=>{r.id=uid();r.done=false;r.back=false}));c.money=[];c.leg='go';S.trips.push(c);S.cur=c.id;closeSheet();renderAll();toast('Trip duplicated — checks cleared')}
+ else if(a==='del'){openSheet(`<h2>Delete “${esc(t.name)}”?</h2><p class="note">This removes its checklists, itinerary and money records from this device.</p><div class="acts"><button class="btn ghost" data-s="close">Keep it</button><button class="btn pri" style="background:var(--stamp)" data-s="delyes">Delete trip</button></div>`)}
+ else if(a==='delyes'){const i=S.trips.indexOf(t);S.trips.splice(i,1);if(!S.trips.length){const nt={id:uid(),name:'My next trip',from:'',to:'',start:'',end:'',kind:'vacation',scope:'domestic',home:t.home,rates:{},plan:[],money:[],...template('vacation','domestic')};S.trips.push(nt)}S.cur=S.trips[Math.max(0,i-1)].id;closeSheet();renderAll();save(true);
+  toast('Trip deleted','Undo',()=>{S.trips.splice(i,0,t);S.cur=t.id;renderAll()})}
+ else if(a==='text')copy(asText(t),'Checklist copied — paste it into chat or notes');
+ else if(a==='copyjson')copy(JSON.stringify({v:1,trips:S.trips}),'Backup copied');
+ else if(a==='dl'){try{const u=URL.createObjectURL(new Blob([JSON.stringify({v:1,trips:S.trips},null,1)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download=`tripkit-backup-${todayISO()}.json`;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(e){toast('Download blocked here — use Copy backup')}}
+ else if(a==='import')importSheet();
+ else if(a==='tour')startTour();
+ else if(a==='file')$('#fileIn').click();
+ else if(a==='doimport')doImport($('#imp').value);
+ else if(a==='coladd'){const n=$('#nc-name').value.trim();if(!n){$('#nc-name').focus();return}t.cols=t.cols||{};(t.cols[S.tab]=t.cols[S.tab]||[]).push({k:'c_'+uid(),l:n.slice(0,40),t:$('#nc-type').value});save(true);renderPanel();colsSheet();toast(`Column “${n.slice(0,24)}” added`)}
+ else if(a==='coldel'){const arr=t.cols?.[S.tab]||[],i=arr.findIndex(c=>c.k===b.dataset.k);if(i<0)return;const [c]=arr.splice(i,1);save(true);renderPanel();colsSheet();toast(`Removed “${c.l.slice(0,24)}”`,'Undo',()=>{arr.splice(i,0,c);renderPanel();save(true)})}
+});
+$('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;f.text().then(doImport);e.target.value=''});
+$('#tripsBtn').addEventListener('click',tripsSheet);
+
+/* ---------- custom columns ---------- */
+function colsSheet(){
+ const t=trip(),tab=S.tab,list=t.cols?.[tab]||[],tl=TABS.find(x=>x.k===tab).l;
+ const TY={text:'Text',num:'Number',date:'Date'};
+ openSheet(`<h2>Columns · ${tl}</h2><p class="note">Add your own columns for this trip, e.g. Weight, Booking ref, Who carries it. Built-in columns stay.</p>
+ <div class="tlist">${list.length?list.map(c=>`<div class="colrow"><input data-colren="${esc(c.k)}" value="${esc(c.l)}" aria-label="Column name"><span class="hint">${TY[c.t]||'Text'}</span><button class="btn danger" data-s="coldel" data-k="${esc(c.k)}">Remove</button></div>`).join(''):'<p class="note" style="margin:0">No custom columns yet.</p>'}</div>
+ <div class="row2"><div class="f"><label for="nc-name">New column</label><input id="nc-name" placeholder="e.g. Booking ref" maxlength="40"></div>
+ <div class="f"><label for="nc-type">Type</label><select id="nc-type"><option value="text">Text</option><option value="num">Number</option><option value="date">Date</option></select></div></div>
+ <div class="acts"><button class="btn ghost" data-s="close">Done</button><button class="btn pri" data-s="coladd">Add column</button></div>`);
+}
+sh.addEventListener('input',e=>{const k=e.target.dataset?.colren;if(!k)return;const c=(trip().cols?.[S.tab]||[]).find(x=>x.k===k);if(c){c.l=e.target.value.slice(0,40)||'Column';save();renderPanel()}});
+sh.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='nc-name'){e.preventDefault();sh.querySelector('[data-s=coladd]').click()}});
+
+/* ---------- help + guided tour ---------- */
+function helpSheet(){
+ openSheet(`<div class="help"><h2>How to use TripKit</h2>
+ <div class="lead"><p>New here? A 1-minute tour points at each part of the screen.</p><button class="btn pri" data-s="tour">Start tour</button></div>
+ <h3>1. Set up your trip</h3><p>Tap <b>Trips → + New trip</b>. Enter From, Transit via (optional), To, dates, purpose (vacation / business) and domestic / abroad. Leave “Prefill” on to get a ready-made packing and document list. Change any of it later in <b>Trips → Edit current</b>.</p>
+ <h3>2. Pack and tick: Going</h3><p>In <b>Packing</b> and <b>Documents</b>, keep the switch on <b>Going</b> and tick the <b>Go</b> column as things go in your bag.</p>
+ <h3>3. Coming home: Going home</h3><p>Before you return, switch to <b>Going home</b> and tick <b>Back</b>. Tap <b>Missing</b> to list everything you brought but haven’t packed back yet. Bought something on the trip? Add a row and tick only Back.</p>
+ <h3>4. Documents by stage</h3><p>Chips group documents into Before departure, At departure, In transit, On arrival and Return trip. Type your own stage in “When needed” to make a new group. A red expiry date means it runs out within 6 months of your return.</p>
+ <h3>5. Itinerary</h3><p>Add places with date, time, area and estimated cost. Sorted by date; tick places you visited. Date chips show one day at a time.</p>
+ <h3>6. Money</h3><ul><li><b>Brought</b> = cash or budget you take; <b>Spent</b> = what you pay.</li><li>Use any currency code (CNY, SGD…) and set its rate once under Exchange rates — totals convert to your home currency, offline.</li><li>See what’s left, a per-day allowance and spending by category.</li></ul>
+ <h3>7. Work like a spreadsheet</h3><ul><li>Tap any cell to type. <kbd>Enter</kbd> next row (adds one at the end), <kbd>Shift</kbd>+<kbd>Enter</kbd> up.</li><li>Copy rows from Google Sheets / Excel and paste into a cell to add many rows at once.</li><li>Tap a header to sort; use search, chips and “Hide done” to filter.</li><li>Tap <b>+</b> at the end of the headers to add your own column (text, number or date).</li><li>Delete with × at the end of a row — or <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Backspace</kbd>. Every delete can be undone.</li></ul>
+ <h3>8. Offline, backup and sharing</h3><ul><li>Everything is saved on this device only and works without internet once installed (Android: Chrome menu → Install app; iPhone: Share → Add to Home Screen).</li><li><b>Trips → Copy checklist as text</b> to send it on WhatsApp.</li><li><b>Trips → Download / Copy backup</b> before changing phones, then <b>Import backup</b> on the new one.</li></ul>
+ <div class="acts"><button class="btn" data-s="tour">Start tour</button><button class="btn pri" data-s="close">Got it</button></div></div>`);
+}
+const TOUR=[
+ ['#tripsBtn','Your trips','Switch trips, create a new one, edit the route, dates and transit, and back up your data.'],
+ ['.pass','Trip card','Route, dates and countdown. Tap any of the four meters to jump straight to that list.'],
+ ['#seg','Four lists','Packing, Documents, Itinerary and Money. The small numbers show how much is done.'],
+ ['.legbar','Going or going home','Tick Go while packing at home. Before you return, switch to Going home and tap Missing to see anything not packed back yet.'],
+ ['.chips','Quick filters','Filter by category (stage for documents, day for the itinerary). Type a new category in a row and its chip appears.'],
+ ['table.g thead','Columns','Tap a header to sort. Tap + at the end to add your own column, like Weight or Booking ref.'],
+ ['tbody tr:first-child td.ck','Tick as you pack','Go = packed for the trip there. Back = packed for the trip home.'],
+ ['tbody tr:first-child [data-k=name]','Edit like a spreadsheet','Tap a cell and type. Enter moves to the next row or adds one. Paste rows copied from Google Sheets to add many at once.'],
+ ['[data-act=add]','Add rows','Add anything you need. Delete with × at the end of a row — every delete can be undone.'],
+ ['.meter[data-tab=money]','Money','Log what you bring and spend in any currency. Set exchange rates once in the Money tab; totals convert to your home currency.'],
+ ['#helpBtn','Help anytime','Reopen this tour or read the full guide here. Everything is saved on this device and works offline.']];
+const tour={i:0,steps:[],on:false};
+const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+function startTour(){
+ if(sh.classList.contains('open'))closeSheet();
+ S.tab='pack';view.chip={};view.q='';view.missing=false;view.hide=false;renderAll();window.scrollTo(0,0);
+ tour.steps=TOUR.filter(([sel])=>document.querySelector(sel));tour.i=0;tour.on=true;
+ $('#tourBlock').hidden=false;$('#tourHi').hidden=false;$('#tourPop').hidden=false;
+ addEventListener('resize',placeTour);addEventListener('scroll',placeTour,{passive:true});
+ showStep(0);
+}
+function endTour(){tour.on=false;['#tourBlock','#tourHi','#tourPop'].forEach(x=>$(x).hidden=true);$('#tourPop').classList.remove('open');removeEventListener('resize',placeTour);removeEventListener('scroll',placeTour);S.toured=true;save(true);$('#helpBtn').focus({preventScroll:true})}
+function showStep(i){
+ tour.i=i;const [sel,title,text]=tour.steps[i],n=tour.steps.length,el=document.querySelector(sel),pop=$('#tourPop');
+ pop.classList.remove('open');
+ pop.innerHTML=`<div class="dots">${tour.steps.map((_,j)=>`<i class="${j<=i?'on':''}"></i>`).join('')}</div><h4 id="tourT">${title}</h4><p>${text}</p>
+  <div class="tf"><span>${i+1} of ${n}</span>${i<n-1?'<button class="btn ghost" data-t="skip">Skip</button>':''}${i?'<button class="btn" data-t="prev">Back</button>':''}<button class="btn pri" data-t="next">${i<n-1?'Next':'Done'}</button></div>`;
+ pop.setAttribute('aria-labelledby','tourT');
+ const r=el.getBoundingClientRect(),vh=innerHeight;
+ if(r.top<70||r.bottom>vh-200){const want=r.height>vh*.5?70:(vh-r.height)/2-60;window.scrollBy({top:r.top-want,behavior:reduce()?'auto':'smooth'})}
+ setTimeout(()=>{placeTour();pop.classList.add('open');pop.querySelector('[data-t=next]').focus({preventScroll:true})},reduce()?0:320);
+}
+function placeTour(){
+ if(!tour.on)return;const els=[...document.querySelectorAll(tour.steps[tour.i][0])];if(!els.length)return;
+ const rs=els.map(e=>e.getBoundingClientRect()),r={top:Math.min(...rs.map(x=>x.top)),bottom:Math.max(...rs.map(x=>x.bottom)),left:Math.min(...rs.map(x=>x.left)),right:Math.max(...rs.map(x=>x.right))};r.width=r.right-r.left;
+ const pad=6,vw=innerWidth,vh=innerHeight,hi=$('#tourHi'),pop=$('#tourPop');
+ const top=Math.max(4,r.top-pad),bot=Math.min(vh-4,r.bottom+pad),left=Math.max(4,r.left-pad),right=Math.min(vw-4,r.right+pad);
+ Object.assign(hi.style,{top:top+'px',left:left+'px',width:Math.max(0,right-left)+'px',height:Math.max(0,bot-top)+'px'});
+ const pw=pop.offsetWidth,ph=pop.offsetHeight;
+ let y=bot+12;if(y+ph>vh-8)y=top-ph-12;if(y<8)y=Math.min(vh-ph-8,Math.max(8,bot-ph-8));
+ const x=Math.min(vw-pw-12,Math.max(12,r.left+r.width/2-pw/2));
+ pop.style.top=y+'px';pop.style.left=x+'px';
+}
+$('#tourPop').addEventListener('click',e=>{const t=e.target.closest('[data-t]')?.dataset.t;if(!t)return;
+ if(t==='next'){tour.i<tour.steps.length-1?showStep(tour.i+1):endTour()}else if(t==='prev')showStep(tour.i-1);else endTour()});
+document.addEventListener('keydown',e=>{if(!tour.on)return;
+ if(e.key==='Escape'){e.preventDefault();endTour()}else if(e.key==='ArrowRight'){e.preventDefault();tour.i<tour.steps.length-1?showStep(tour.i+1):endTour()}else if(e.key==='ArrowLeft'&&tour.i){e.preventDefault();showStep(tour.i-1)}});
+$('#helpBtn').addEventListener('click',helpSheet);
+
+/* ---------- toast ---------- */
+let toastT=0,toastFn=null;
+function toast(msg,act,fn){$('#toastMsg').textContent=msg;const b=$('#toastBtn');b.hidden=!act;b.textContent=act||'';toastFn=fn||null;$('#toast').classList.add('open');clearTimeout(toastT);toastT=setTimeout(()=>$('#toast').classList.remove('open'),act?6000:2600)}
+$('#toastBtn').addEventListener('click',()=>{toastFn?.();toastFn=null;$('#toast').classList.remove('open')});
+
+/* ---------- status, offline, install ---------- */
+function setStatus(){const el=$('#status'),on=navigator.onLine;el.classList.toggle('off',!canStore);el.querySelector('span').textContent=!canStore?'Not saving — storage blocked':on?'Saved on this device':'Offline · saved on this device'}
+addEventListener('online',setStatus);addEventListener('offline',setStatus);
+let deferred=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('#installBtn').hidden=false});
+$('#installBtn').addEventListener('click',async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice}catch(e){}deferred=null;$('#installBtn').hidden=true});
+try{if('serviceWorker' in navigator&&!framed&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
+addEventListener('beforeunload',()=>save(true));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save(true)});
+
+renderAll();setStatus();
+if(!S.toured){S.toured=true;save(true);setTimeout(()=>toast('New here? Take a 1-minute tour','Start tour',startTour),900)}
+}
+</script>
+</body>
+</html>
