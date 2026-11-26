@@ -253,6 +253,7 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
    e.g. const SYNC_URL = 'https://tripkit-sync.yourname.workers.dev';
    Leave empty to type it inside the app instead (Trips → Sync between devices). */
 const SYNC_URL = 'https://tripkit-sync.qitmahendra.workers.dev';
+const APP_VERSION = '6';
 
 const KEY='tripkit.v1';
 const $=s=>document.querySelector(s);
@@ -569,7 +570,8 @@ function tripsSheet(){
   <div class="acts" style="justify-content:flex-start"><button class="btn${Y.code?'':' pri'}" data-s="sync">${Y.code?'Sync settings':'Set up sync'}</button></div>
   <div class="sep"></div><h2 style="font-size:16px">Backup &amp; share</h2>
   <p class="note">Everything is stored only in this browser and works offline. Keep a backup before clearing browser data.</p>
-  <div class="acts" style="justify-content:flex-start"><button class="btn" data-s="text">Copy checklist as text</button><button class="btn" data-s="copyjson">Copy backup</button>${framed?'':'<button class="btn" data-s="dl">Download backup</button>'}<button class="btn" data-s="import">Import backup</button></div>`);
+  <div class="acts" style="justify-content:flex-start"><button class="btn" data-s="text">Copy checklist as text</button><button class="btn" data-s="copyjson">Copy backup</button>${framed?'':'<button class="btn" data-s="dl">Download backup</button>'}<button class="btn" data-s="import">Import backup</button></div>
+  <p class="note" style="margin:14px 0 0">TripKit version ${APP_VERSION}</p>`);
 }
 function tripForm(t){
  const isNew=!t;t=t||{name:'',from:'',to:'',via:'',start:'',end:'',kind:'vacation',scope:'domestic',home:trip()?.home||'IDR'};
@@ -656,7 +658,7 @@ sh.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='nc-name'){e
 
 /* ---------- help + guided tour ---------- */
 function helpSheet(){
- openSheet(`<div class="help"><h2>How to use TripKit</h2>
+ openSheet(`<div class="help"><h2>How to use TripKit</h2><p class="note">Version ${APP_VERSION}</p>
  <div class="lead"><p>New here? A 1-minute tour points at each part of the screen.</p><button class="btn pri" data-s="tour">Start tour</button></div>
  <h3>1. Set up your trip</h3><p>Tap <b>Trips → + New trip</b>. Enter From, Transit via (optional), To, dates, purpose (vacation / business) and domestic / abroad. Leave “Prefill” on to get a ready-made packing and document list. Change any of it later in <b>Trips → Edit current</b>.</p>
  <h3>2. Pack and tick: Going</h3><p>In <b>Packing</b> and <b>Documents</b>, keep the switch on <b>Going</b> and tick the <b>Go</b> column as things go in your bag.</p>

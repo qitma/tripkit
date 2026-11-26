@@ -33,8 +33,11 @@ In the app, tap **?** (top right) for this guide or **Start tour** for a step-by
 - **Trips → Copy checklist as text** to send the list on WhatsApp.
 - **Trips → Download / Copy backup** before changing phones or clearing browser data, then **Import backup** on the new device.
 
+## Sync between devices (optional)
+Edit on your phone and laptop with one sync code. Data is encrypted on the device before upload, and offline edits merge when you're back online. Setup uses your Cloudflare account (a free Worker + D1 database); see **CLOUDFLARE-SYNC.md**. In the app: **Trips → Set up sync**.
+
 ## Hosting
-See **DEPLOY.md** for the step-by-step GitHub Pages guide. After any update, change the cache name in `sw.js` (for example `tripkit-v4` → `tripkit-v5`) so installed phones fetch the new version.
+See **DEPLOY.md** for the step-by-step GitHub Pages guide. After any update, change the cache name in `sw.js` (for example `tripkit-v6` → `tripkit-v7`) so installed phones fetch the new version.
 
 ## Files
-`index.html` (the whole app), `sw.js` (offline cache), `manifest.webmanifest` + icons (install), `README.md`, `DEPLOY.md`.
+`index.html` (the whole app; set `SYNC_URL` near the top of the script), `sw.js` (offline cache), `manifest.webmanifest` + icons (install), `worker.js` (Cloudflare sync server, not uploaded to GitHub), `README.md`, `DEPLOY.md`, `CLOUDFLARE-SYNC.md`.

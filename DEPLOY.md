@@ -13,7 +13,7 @@
 
 ## Updating later
 - Repo → click `index.html` → pencil icon (or **Add file → Upload files** to replace) → Commit.
-- In `sw.js`, change `tripkit-v4` to `tripkit-v5` (any new name) and commit, so phones download the new version.
+- In `sw.js`, change `tripkit-v6` to `tripkit-v7` (any new name) and commit, so phones download the new version.
 - On the phone, open the app twice (first open fetches the update, second shows it).
 
 ## Keep your data safe

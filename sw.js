@@ -1,5 +1,7 @@
-// TripKit service worker: app shell cached on install, works fully offline.
-const CACHE = 'tripkit-v5';
+// TripKit service worker
+// - The page itself: network first (so updates show immediately when online), cached copy when offline.
+// - Everything else (icons, fonts): cache first, refreshed in the background.
+const CACHE = 'tripkit-v6';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -13,18 +15,38 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Cache-first for everything (app shell + Google Fonts), refresh cache in the background.
+function fromNetwork(req, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    fetch(req, { cache: 'no-store' }).then(res => { clearTimeout(t); resolve(res); }, err => { clearTimeout(t); reject(err); });
+  });
+}
+
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  e.respondWith(
-    caches.match(e.request, { ignoreSearch: true }).then(hit => {
-      const net = fetch(e.request).then(res => {
-        if (res && (res.ok || res.type === 'opaque')) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-        }
+  const req = e.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  const isPage = req.mode === 'navigate' || (url.origin === location.origin && /\/(index\.html)?$/.test(url.pathname));
+
+  if (isPage) {
+    e.respondWith(
+      fromNetwork(req, 4000).then(res => {
+        if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put('./index.html', copy)); }
         return res;
-      }).catch(() => hit || (e.request.mode === 'navigate' ? caches.match('./index.html') : undefined));
+      }).catch(() => caches.match('./index.html').then(hit => hit || caches.match('./')))
+    );
+    return;
+  }
+
+  // Never cache the sync server's answers.
+  if (url.origin !== location.origin && !/fonts\.(googleapis|gstatic)\.com$/.test(url.hostname)) return;
+
+  e.respondWith(
+    caches.match(req, { ignoreSearch: true }).then(hit => {
+      const net = fetch(req).then(res => {
+        if (res && (res.ok || res.type === 'opaque')) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); }
+        return res;
+      }).catch(() => hit);
       return hit || net;
     })
   );
