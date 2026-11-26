@@ -36,7 +36,12 @@ button{cursor:pointer;touch-action:manipulation}
 .brand svg{width:26px;height:26px}
 .status{font-size:13px;color:var(--mute);display:flex;align-items:center;gap:6px}
 .status i{width:7px;height:7px;border-radius:50%;background:#2fb36b;display:inline-block}
-.status.off i{background:var(--stamp)}
+.status.off i{background:var(--stamp)}.status.busy i{background:#f5a524}.status.idle i{background:var(--mute)}
+.status{cursor:pointer;border:0;background:none;padding:0 4px;min-height:40px}
+.codebox{font:600 17px/1.4 ui-monospace,Menlo,monospace;letter-spacing:.04em;background:var(--panel);border-radius:12px;padding:12px 14px;word-break:break-all;margin-bottom:8px;user-select:all}
+.syncstate{display:flex;align-items:center;gap:8px;font-size:15px;margin-bottom:10px}
+.syncstate i{width:9px;height:9px;border-radius:50%;background:#2fb36b}
+.syncstate.err i{background:var(--stamp)}.syncstate.busy i{background:#f5a524}.syncstate.idle i{background:var(--mute)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:0 14px;border-radius:10px;border:0;background:var(--panel);font-weight:500;font-size:15px;transition:transform .16s var(--ease-out),background-color .16s}
 .btn:active{transform:scale(.97)}
 .btn.pri{background:var(--accent);color:var(--accent-ink)}
@@ -227,7 +232,7 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
 <div class="wrap">
  <header class="top">
   <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2c5cff"/><path d="M9 17l4 4 10-10" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>TripKit</div>
-  <div class="status" id="status"><i></i><span>Saved on this device</span></div>
+  <button class="status" id="status" aria-label="Sync status"><i></i><span>Saved on this device</span></button>
   <button class="btn" id="installBtn" hidden>Install</button>
   <button class="btn icon" id="helpBtn" aria-label="Help and guided tour" title="Help">?</button>
   <button class="btn" id="tripsBtn">Trips</button>
@@ -244,6 +249,11 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
 
 <script>
 {
+/* ===== SYNC SETTING: paste your Cloudflare Worker URL between the quotes =====
+   e.g. const SYNC_URL = 'https://tripkit-sync.yourname.workers.dev';
+   Leave empty to type it inside the app instead (Trips → Sync between devices). */
+const SYNC_URL = '';
+
 const KEY='tripkit.v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -328,7 +338,7 @@ function shenzhen(){
 let canStore=true;
 function load(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null}catch(e){canStore=false;return null}}
 let saveT=0;
-function save(now){clearTimeout(saveT);const go=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));canStore=true}catch(e){canStore=false}setStatus()};now?go():saveT=setTimeout(go,250)}
+function save(now){clearTimeout(saveT);const go=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));canStore=true}catch(e){canStore=false}setStatus();if(typeof scheduleSync==='function')scheduleSync()};now?go():saveT=setTimeout(go,250)}
 let S=load();
 if(!S||!Array.isArray(S.trips)||!S.trips.length){const z=shenzhen();S={v:1,trips:[z],cur:z.id,tab:'docs'}}
 else if(!S.trips.some(t=>t.seed==='szx')){const z=shenzhen();S.trips.unshift(z);S.cur=z.id;S.tab='docs'}
@@ -554,6 +564,9 @@ function tripsSheet(){
   return `<button class="titem${t.id===S.cur?' on':''}" data-pick="${t.id}"><div><b>${esc(t.name)}</b><small>${esc(t.from)} → ${t.via?esc(t.via)+' → ':''}${esc(t.to)} · ${esc(fmtD(t.start,{day:'numeric',month:'short'}))}</small></div><em>${n?Math.round(done/n*100):0}% ready</em></button>`}).join('');
  openSheet(`<h2>Your trips</h2><div class="tlist">${list}</div>
   <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-s="new">+ New trip</button><button class="btn" data-s="edit">Edit current</button><button class="btn" data-s="dup">Duplicate</button><button class="btn danger" data-s="del">Delete</button></div>
+  <div class="sep"></div><h2 style="font-size:16px">Sync between devices</h2>
+  <p class="note">${Y.code?`On · ${esc(syncLabel())}`:'Off — edit on phone and laptop with one sync code.'}</p>
+  <div class="acts" style="justify-content:flex-start"><button class="btn${Y.code?'':' pri'}" data-s="sync">${Y.code?'Sync settings':'Set up sync'}</button></div>
   <div class="sep"></div><h2 style="font-size:16px">Backup &amp; share</h2>
   <p class="note">Everything is stored only in this browser and works offline. Keep a backup before clearing browser data.</p>
   <div class="acts" style="justify-content:flex-start"><button class="btn" data-s="text">Copy checklist as text</button><button class="btn" data-s="copyjson">Copy backup</button>${framed?'':'<button class="btn" data-s="dl">Download backup</button>'}<button class="btn" data-s="import">Import backup</button></div>`);
@@ -618,6 +631,8 @@ sh.addEventListener('click',e=>{
  else if(a==='dl'){try{const u=URL.createObjectURL(new Blob([JSON.stringify({v:1,trips:S.trips},null,1)],{type:'application/json'}));const l=document.createElement('a');l.href=u;l.download=`tripkit-backup-${todayISO()}.json`;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}catch(e){toast('Download blocked here — use Copy backup')}}
  else if(a==='import')importSheet();
  else if(a==='tour')startTour();
+ else if(a==='sync')syncSheet();
+ else if(a.startsWith('sync-'))syncAction(a,b);
  else if(a==='file')$('#fileIn').click();
  else if(a==='doimport')doImport($('#imp').value);
  else if(a==='coladd'){const n=$('#nc-name').value.trim();if(!n){$('#nc-name').focus();return}t.cols=t.cols||{};(t.cols[S.tab]=t.cols[S.tab]||[]).push({k:'c_'+uid(),l:n.slice(0,40),t:$('#nc-type').value});save(true);renderPanel();colsSheet();toast(`Column “${n.slice(0,24)}” added`)}
@@ -651,6 +666,7 @@ function helpSheet(){
  <h3>6. Money</h3><ul><li><b>Brought</b> = cash or budget you take; <b>Spent</b> = what you pay.</li><li>Use any currency code (CNY, SGD…) and set its rate once under Exchange rates — totals convert to your home currency, offline.</li><li>See what’s left, a per-day allowance and spending by category.</li></ul>
  <h3>7. Work like a spreadsheet</h3><ul><li>Tap any cell to type. <kbd>Enter</kbd> next row (adds one at the end), <kbd>Shift</kbd>+<kbd>Enter</kbd> up.</li><li>Copy rows from Google Sheets / Excel and paste into a cell to add many rows at once.</li><li>Tap a header to sort; use search, chips and “Hide done” to filter.</li><li>Tap <b>+</b> at the end of the headers to add your own column (text, number or date).</li><li>Delete with × at the end of a row — or <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Backspace</kbd>. Every delete can be undone.</li></ul>
  <h3>8. Offline, backup and sharing</h3><ul><li>Everything is saved on this device only and works without internet once installed (Android: Chrome menu → Install app; iPhone: Share → Add to Home Screen).</li><li><b>Trips → Copy checklist as text</b> to send it on WhatsApp.</li><li><b>Trips → Download / Copy backup</b> before changing phones, then <b>Import backup</b> on the new one.</li></ul>
+ <h3>9. Sync between devices</h3><ul><li><b>Trips → Set up sync → Create sync code</b> on your first device.</li><li>On the other device: <b>Trips → Set up sync</b>, type the code, then <b>Join</b>.</li><li>Edit offline as usual — changes sync automatically when you’re online. The dot at the top shows the state: green synced, amber syncing, grey offline, red problem (tap it for details).</li><li>Data is encrypted with your code before upload; keep the code private.</li></ul>
  <div class="acts"><button class="btn" data-s="tour">Start tour</button><button class="btn pri" data-s="close">Got it</button></div></div>`);
 }
 const TOUR=[
@@ -709,16 +725,146 @@ function toast(msg,act,fn){$('#toastMsg').textContent=msg;const b=$('#toastBtn')
 $('#toastBtn').addEventListener('click',()=>{toastFn?.();toastFn=null;$('#toast').classList.remove('open')});
 
 /* ---------- status, offline, install ---------- */
-function setStatus(){const el=$('#status'),on=navigator.onLine;el.classList.toggle('off',!canStore);el.querySelector('span').textContent=!canStore?'Not saving — storage blocked':on?'Saved on this device':'Offline · saved on this device'}
-addEventListener('online',setStatus);addEventListener('offline',setStatus);
+function setStatus(){const el=$('#status'),on=navigator.onLine,sy=!!(Y.code&&syncURL());let txt,cls='';
+ if(!canStore){txt='Not saving — storage blocked';cls='off'}
+ else if(sy){if(!on){txt='Offline · will sync';cls='idle'}else if(syncState==='syncing'){txt='Syncing…';cls='busy'}else if(syncState==='error'){txt='Sync problem';cls='off'}else if(syncState==='ok'){txt='Synced'}else{txt='Sync on';cls='idle'}}
+ else txt=on?'Saved on this device':'Offline · saved on this device';
+ el.className='status'+(cls?' '+cls:'');el.querySelector('span').textContent=txt;el.title=txt}
+addEventListener('online',()=>{setStatus();scheduleSync(500)});addEventListener('offline',setStatus);
 let deferred=null;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('#installBtn').hidden=false});
 $('#installBtn').addEventListener('click',async()=>{if(!deferred)return;deferred.prompt();try{await deferred.userChoice}catch(e){}deferred=null;$('#installBtn').hidden=true});
 try{if('serviceWorker' in navigator&&!framed&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1'))navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}
 addEventListener('beforeunload',()=>save(true));
-document.addEventListener('visibilitychange',()=>{if(document.hidden)save(true)});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)save(true);else scheduleSync(300)});
 
-renderAll();setStatus();
+/* ---------- sync: Cloudflare Worker + D1, end-to-end encrypted ---------- */
+const SK='tripkit.sync';
+let Y=(()=>{try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return {}}})();
+const saveY=()=>{try{localStorage.setItem(SK,JSON.stringify(Y))}catch(e){}};
+const syncURL=()=>String(Y.url||SYNC_URL||'').trim().replace(/\/+$/,'');
+const canSync=()=>!framed&&window.isSecureContext&&!!window.crypto?.subtle;
+let syncState='',syncErr='',syncing=false,syncAgain=false,syncT=0,K=null;
+const B32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+function b32enc(u){let bits=0,v=0,o='';for(const b of u){v=((v<<8)|b)&0xffff;bits+=8;while(bits>=5){o+=B32[(v>>>(bits-5))&31];bits-=5}}if(bits)o+=B32[(v<<(5-bits))&31];return o}
+function b32dec(str){let bits=0,v=0;const o=[];for(const ch of str){const i=B32.indexOf(ch);if(i<0)throw new Error('bad code');v=((v<<5)|i)&0xffff;bits+=5;if(bits>=8){o.push((v>>>(bits-8))&255);bits-=8}}return new Uint8Array(o)}
+const normCode=c=>String(c||'').toUpperCase().replace(/[^A-Z2-7]/g,'');
+const fmtCode=c=>c.match(/.{1,4}/g).join('-');
+const te=new TextEncoder();
+async function keysFor(code){
+ const km=await crypto.subtle.importKey('raw',b32dec(code),'HKDF',false,['deriveBits','deriveKey']);
+ const p=info=>({name:'HKDF',hash:'SHA-256',salt:te.encode('tripkit-sync-v1'),info:te.encode(info)});
+ const idb=new Uint8Array(await crypto.subtle.deriveBits(p('id'),km,256));
+ return {id:[...idb].map(b=>b.toString(16).padStart(2,'0')).join(''),key:await crypto.subtle.deriveKey(p('enc'),km,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])};
+}
+const b64=u=>{let x='';for(let i=0;i<u.length;i+=32768)x+=String.fromCharCode(...u.subarray(i,i+32768));return btoa(x)};
+const unb64=x=>Uint8Array.from(atob(x),c=>c.charCodeAt(0));
+async function seal(key,obj){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},key,te.encode(JSON.stringify(obj))));const o=new Uint8Array(12+ct.length);o.set(iv);o.set(ct,12);return b64(o)}
+async function unseal(key,x){const u=unb64(x);return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},key,u.subarray(12))))}
+/* three-way merge: base = last synced copy, l = this device, r = server */
+const stable=v=>JSON.stringify(v,(k,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k2)=>(o[k2]=x[k2],o),{}):x);
+const same=(a,b)=>stable(a)===stable(b);
+const keyOf=x=>x&&typeof x==='object'?(x.id??x.k):undefined;
+const isList=a=>Array.isArray(a)&&a.every(x=>keyOf(x)!==undefined);
+const isObj=x=>x&&typeof x==='object'&&!Array.isArray(x);
+function m3(b,l,r){
+ if(same(l,r))return l;if(same(l,b))return r;if(same(r,b))return l;
+ if(isList(l)&&isList(r))return mList(isList(b)?b:[],l,r);
+ if(isObj(l)&&isObj(r)){const bb=isObj(b)?b:{},o={};for(const k of new Set([...Object.keys(l),...Object.keys(r)])){const v=m3(bb[k],l[k],r[k]);if(v!==undefined)o[k]=v}return o}
+ return l; // same field edited on both: the device syncing now wins
+}
+function mList(b,l,r){
+ const B=new Map(b.map(x=>[keyOf(x),x])),L=new Map(l.map(x=>[keyOf(x),x])),Rm=new Map(r.map(x=>[keyOf(x),x])),keep=new Map();
+ for(const [k,x] of L){if(Rm.has(k))keep.set(k,m3(B.get(k),x,Rm.get(k)));else if(!B.has(k)||!same(B.get(k),x))keep.set(k,x)}
+ const out=[...keep.keys()];
+ r.forEach((x,i)=>{const k=keyOf(x);if(L.has(k)||(B.has(k)&&same(B.get(k),x)))return;keep.set(k,x);let pos=-1;for(let j=i-1;j>=0;j--){const q=out.indexOf(keyOf(r[j]));if(q>=0){pos=q;break}}out.splice(pos+1,0,k)});
+ return out.map(k=>keep.get(k));
+}
+const snapshot=()=>JSON.parse(JSON.stringify({trips:S.trips}));
+async function api(method,id,body){
+ const ctl=new AbortController(),to=setTimeout(()=>ctl.abort(),15000);
+ try{const r=await fetch(`${syncURL()}/v1/sync/${id}`,{method,signal:ctl.signal,cache:'no-store',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
+  let j={};try{j=await r.json()}catch(e){}return {status:r.status,...j}}
+ catch(e){throw new Error(e.name==='AbortError'?'Server took too long':'Can\u2019t reach the sync server')}finally{clearTimeout(to)}
+}
+function scheduleSync(ms=2000){if(!Y.code||!syncURL()||!canSync())return;clearTimeout(syncT);syncT=setTimeout(syncNow,ms)}
+function setSync(st,err=''){syncState=st;syncErr=err;setStatus();const box=$('#syncBox');if(box)box.outerHTML=syncBoxHTML()}
+async function syncNow(){
+ if(!Y.code||!syncURL()||!canSync())return;
+ if(syncing){syncAgain=true;return}
+ if(!navigator.onLine){setSync('');return}
+ syncing=true;setSync('syncing');
+ try{
+  K=K||await keysFor(Y.code);let done=false;
+  for(let attempt=0;attempt<4&&!done;attempt++){
+   const L=snapshot(),base=Y.base||{trips:[]};
+   const g=await api('GET',K.id);
+   if(g.status!==200&&g.status!==404)throw new Error(g.error?`Server: ${g.error}`:`Server error ${g.status}`);
+   const rver=g.status===404?0:g.ver;
+   const R=rver===0?{trips:[]}:rver===Y.ver?base:await unseal(K.key,g.data);
+   const M=rver===Y.ver?L:m3(base,L,R);
+   let nv=rver;
+   if(rver===0||!same(M,R)){const p=await api('PUT',K.id,{ver:rver,data:await seal(K.key,M)});if(p.status===409)continue;if(p.status!==200)throw new Error(p.error?`Server: ${p.error}`:`Server error ${p.status}`);nv=p.ver}
+   Y.base=M;Y.ver=nv;Y.last=Date.now();saveY();applyMerged(L,M);done=true;
+  }
+  if(!done)throw new Error('Busy — will retry');
+  setSync('ok');
+ }catch(e){setSync('error',String(e.message||e))}
+ finally{syncing=false;if(syncAgain){syncAgain=false;scheduleSync(300)}}
+}
+function applyMerged(L,M){
+ const cur=snapshot(),next=same(cur,L)?M:m3(L,cur,M); // keep anything typed while syncing
+ if(same(next,cur))return;
+ const a=document.activeElement,tr=a?.closest?.('tr[data-id]'),k=a?.dataset?.k,pos=a?.selectionStart;
+ S.trips=JSON.parse(JSON.stringify(next.trips||[]));
+ if(!S.trips.length)S.trips.push({id:uid(),name:'My next trip',from:'',via:'',to:'',start:'',end:'',kind:'vacation',scope:'domestic',home:'IDR',rates:{},pack:[],docs:[],plan:[],money:[]});
+ if(!S.trips.some(t=>t.id===S.cur))S.cur=S.trips[0].id;
+ renderAll();
+ if(tr&&k){const el=document.querySelector(`tr[data-id="${tr.dataset.id}"] [data-k="${k}"]`);if(el){el.focus({preventScroll:true});try{if(pos!=null&&el.type==='text')el.setSelectionRange(pos,pos)}catch(e){}}}
+}
+function syncLabel(){if(!navigator.onLine)return 'offline, will sync when online';if(syncState==='syncing')return 'syncing…';if(syncState==='error')return 'problem: '+syncErr;if(Y.last)return 'last synced '+new Date(Y.last).toLocaleTimeString(undefined,{hour:'2-digit',minute:'2-digit'});return 'waiting to sync'}
+function syncBoxHTML(){const c=syncState==='error'?' err':syncState==='syncing'?' busy':(!navigator.onLine||!Y.last)?' idle':'';return `<div class="syncstate${c}" id="syncBox"><i></i><span>${esc(syncLabel()[0].toUpperCase()+syncLabel().slice(1))}</span></div>`}
+function syncSheet(){
+ if(!canSync()){openSheet(`<h2>Sync between devices</h2><p class="note">Sync works in the installed app (your GitHub Pages address), not in this preview window. Open TripKit from your own site to set it up.</p><div class="acts"><button class="btn pri" data-s="close">OK</button></div>`);return}
+ const urlField=SYNC_URL?'':`<div class="f"><label for="sy-url">Sync server URL (your Cloudflare Worker)</label><input id="sy-url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://tripkit-sync.yourname.workers.dev" value="${esc(Y.url||'')}"></div>`;
+ if(Y.code){openSheet(`<h2>Sync between devices</h2>${syncBoxHTML()}
+  <div class="f"><label>Your sync code</label><div class="codebox">${esc(fmtCode(Y.code))}</div></div>
+  <p class="note">Enter this code on your other phone or laptop (Trips → Set up sync → Join). Keep it private: anyone with it can see and edit your trips. Your data is encrypted with it before upload — the server can’t read it.</p>
+  ${SYNC_URL?'':`<p class="note">Server: ${esc(syncURL())}</p>`}
+  <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-s="sync-now">Sync now</button><button class="btn" data-s="sync-copy">Copy code</button><button class="btn" data-s="sync-stop">Stop on this device</button><button class="btn danger" data-s="sync-wipe">Delete cloud copy</button></div>`);return}
+ openSheet(`<h2>Sync between devices</h2><p class="note">Edit on phone and laptop. Works offline; changes sync automatically when you’re back online. Everything is encrypted on this device with your sync code before upload.</p>${urlField}
+  <h3 style="font-size:15px;margin:14px 0 6px">First device</h3><p class="note">Creates a new code and uploads the trips on this device.</p>
+  <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-s="sync-create">Create sync code</button></div>
+  <div class="sep"></div><h3 style="font-size:15px;margin:0 0 6px">Other devices</h3>
+  <div class="f"><label for="sy-code">Sync code from your first device</label><input id="sy-code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XX" style="font-family:ui-monospace,Menlo,monospace"></div>
+  <div class="acts" style="justify-content:flex-start"><button class="btn pri" data-s="sync-join">Join — use synced trips</button><button class="btn" data-s="sync-merge">Join — keep trips on this device too</button></div>
+  <p class="note" id="sy-msg" role="alert"></p>`);
+}
+function readURL(){const f=$('#sy-url');if(f){const u=f.value.trim().replace(/\/+$/,'');if(!/^https:\/\/[^\s/]+/.test(u)&&!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?/.test(u)){syMsg('Paste your Worker URL first — it starts with https://');f.focus();return null}Y.url=u}return syncURL()}
+const syMsg=t=>{const m=$('#sy-msg');if(m)m.textContent=t;else toast(t)};
+async function syncAction(a,btn){
+ if(a==='sync-create'){if(!readURL())return;btn.disabled=true;const code=b32enc(crypto.getRandomValues(new Uint8Array(16)));Y={url:Y.url,code,ver:0,base:{trips:[]}};K=null;saveY();await syncNow();if(syncState==='error'){toast('Couldn\u2019t reach the server: '+syncErr);const u=Y.url;Y={url:u};saveY();K=null;btn.disabled=false;return}syncSheet();toast('Sync code created — enter it on your other device')}
+ else if(a==='sync-join'||a==='sync-merge'){if(!readURL())return;const code=normCode($('#sy-code').value);if(code.length!==26){syMsg('That code doesn\u2019t look right — it has 26 letters and numbers (2–7).');return}
+  btn.disabled=true;syMsg('Connecting…');
+  try{const k=await keysFor(code),g=await api('GET',k.id);
+   if(g.status===404){syMsg('No synced trips found for this code. Check the code, or create one on your first device.');btn.disabled=false;return}
+   if(g.status!==200)throw new Error(g.error||'Server error '+g.status);
+   const R=await unseal(k.key,g.data);K=k;
+   if(a==='sync-join'){Y={url:Y.url,code,ver:g.ver,base:R,last:Date.now()};saveY();S.trips=JSON.parse(JSON.stringify(R.trips||[]));if(!S.trips.length)S.trips.push({id:uid(),name:'My next trip',from:'',via:'',to:'',start:'',end:'',kind:'vacation',scope:'domestic',home:'IDR',rates:{},pack:[],docs:[],plan:[],money:[]});if(!S.trips.some(t=>t.id===S.cur))S.cur=S.trips[0].id;view.chip={};renderAll();setSync('ok')}
+   else{Y={url:Y.url,code,ver:-1,base:{trips:[]}};saveY();await syncNow()}
+   closeSheet();toast('Sync is on for this device')}
+  catch(e){syMsg(String(e.message||e));btn.disabled=false}}
+ else if(a==='sync-now'){await syncNow()}
+ else if(a==='sync-copy')copy(fmtCode(Y.code),'Sync code copied');
+ else if(a==='sync-stop'){openSheet(`<h2>Stop syncing on this device?</h2><p class="note">Your trips stay on this device. Other devices keep syncing. You can join again later with the same code.</p><div class="acts"><button class="btn ghost" data-s="sync">Cancel</button><button class="btn pri" data-s="sync-stop-yes">Stop syncing</button></div>`)}
+ else if(a==='sync-stop-yes'){Y={url:Y.url};K=null;saveY();setSync('');closeSheet();toast('Sync stopped on this device')}
+ else if(a==='sync-wipe'){openSheet(`<h2>Delete the cloud copy?</h2><p class="note">Removes the encrypted copy from your server and stops sync here. Trips on each device stay. Other devices will show a sync problem until they stop syncing too.</p><div class="acts"><button class="btn ghost" data-s="sync">Cancel</button><button class="btn pri" style="background:var(--stamp)" data-s="sync-wipe-yes">Delete cloud copy</button></div>`)}
+ else if(a==='sync-wipe-yes'){try{K=K||await keysFor(Y.code);const r=await api('DELETE',K.id);if(r.status!==200)throw new Error('Server error '+r.status);Y={url:Y.url};K=null;saveY();setSync('');closeSheet();toast('Cloud copy deleted')}catch(e){toast(String(e.message||e))}}
+}
+$('#status').addEventListener('click',()=>{if(Y.code)syncSheet();else tripsSheet()});
+setInterval(()=>{if(!document.hidden&&navigator.onLine)scheduleSync(0)},20000);
+
+renderAll();setStatus();scheduleSync(800);
 if(!S.toured){S.toured=true;save(true);setTimeout(()=>toast('New here? Take a 1-minute tour','Start tour',startTour),900)}
 }
 </script>
