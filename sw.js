@@ -1,7 +1,7 @@
 // TripKit service worker
 // - The page itself: network first (so updates show immediately when online), cached copy when offline.
 // - Everything else (icons, fonts): cache first, refreshed in the background.
-const CACHE = 'tripkit-v7';
+const CACHE = 'tripkit-v8';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

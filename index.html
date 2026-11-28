@@ -235,6 +235,7 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
 .ncard h3{margin:0;font-size:17px;flex:1;overflow-wrap:anywhere;letter-spacing:-.01em}
 .nedit{border:0;background:var(--bg);border-radius:8px;min-height:36px;padding:0 12px;font-size:14px;font-weight:500;color:var(--mute);transition:transform .16s var(--ease-out)}
 .nedit:active{transform:scale(.97)}
+.ndel{color:var(--stamp)}
 .nf{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;padding:8px 0;border-top:1px solid var(--line);align-items:center}
 .nk{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
 .nv{font-size:16px;overflow-wrap:anywhere;white-space:pre-wrap;cursor:text;user-select:text}
@@ -291,7 +292,7 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
    e.g. const SYNC_URL = 'https://tripkit-sync.yourname.workers.dev';
    Leave empty to type it inside the app instead (Trips → Sync between devices). */
 const SYNC_URL = 'https://tripkit-sync.qitmahendra.workers.dev';
-const APP_VERSION = '7';
+const APP_VERSION = '8';
 
 const KEY='tripkit.v1';
 const $=s=>document.querySelector(s);
@@ -550,7 +551,7 @@ function fieldActions(f){
 function noteCard(n){
  const filled=(n.items||[]).filter(f=>String(f.v||'').trim());
  return `<article class="ncard" data-nid="${esc(n.id)}" tabindex="0" aria-label="${esc(n.title||'Note')}">
-  <header><h3>${esc(n.title||'Untitled')}</h3><button class="nedit" data-act="nedit" aria-label="Edit ${esc(n.title||'note')}">Edit</button></header>
+  <header><h3>${esc(n.title||'Untitled')}</h3><button class="nedit" data-act="nedit" aria-label="Edit ${esc(n.title||'note')}">Edit</button><button class="nedit ndel" data-act="ndel" aria-label="Delete ${esc(n.title||'note')}">Delete</button></header>
   ${filled.map(f=>`<div class="nf"><div class="nk">${esc(f.k||'')}</div><div class="nv">${esc(f.v)}</div><div class="na">${fieldActions(f)}</div></div>`).join('')}
   ${n.text?`<p class="ntext">${esc(n.text)}</p>`:''}
   ${!filled.length&&!n.text?'<p class="nhint">Tap to fill in</p>':''}
@@ -644,6 +645,7 @@ P.addEventListener('click',e=>{
  if(act==='ntpl'){noteEditor(null,b.dataset.tpl);return}
  if(act==='nedit'){noteEditor(b.closest('[data-nid]')?.dataset.nid);return}
  if(act==='ncopy'){copy(b.dataset.v,'Copied');return}
+ if(act==='ndel'){const list=notesOf(trip()),id=b.closest('[data-nid]')?.dataset.nid,i=list.findIndex(x=>x.id===id);if(i<0)return;const [n]=list.splice(i,1);renderAll();toast(`Deleted “${(n.title||'note').slice(0,28)}”`,'Undo',()=>{list.splice(i,0,n);renderAll()});return}
  if(act==='add'){const rows=rowsFor(S.tab);addRow(rows.at(-1)?.id);return}
  if(act==='del'&&tr){delRow(tr.dataset.id);return}
  if(act==='chk'&&tr){const k=b.dataset.ck||'done',ck=CK(S.tab),r=trip()[S.tab].find(x=>x.id===tr.dataset.id);r[k]=!r[k];b.setAttribute('aria-pressed',r[k]);tr.classList.toggle('done',!!r[ck]);save();refreshStats();
