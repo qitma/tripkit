@@ -17,7 +17,9 @@ Hosted on GitHub Pages; sync server is a Cloudflare Worker + D1.
 3. Commit and push to `main`; GitHub Pages redeploys in ~1 minute.
 
 ## Data model (localStorage `tripkit.v1`)
-`{trips:[{id,name,from,via,to,start,end,kind,scope,home,rates,leg,cols,pack[],docs[],plan[],money[]}],cur,tab,toured}`
+`{trips:[{id,name,from,via,to,start,end,kind,scope,home,rates,leg,cols,pack[],docs[],plan[],money[],notes[]}],cur,tab,toured}`
+- `notes[]` = cards `{id,title,text,items:[{id,k,v}]}` (Notes tab; not a table).
+- Never re-render or re-sort the table while a cell is being edited (use `refreshSide()`); row order is frozen until a header is tapped (`ordered()`).
 - Rows always have a unique `id`; custom columns have keys `c_xxxxxxxx`.
 - Pack/docs rows: `done` = Go tick, `back` = Back tick.
 - Sync state lives in `tripkit.sync` (`code, url, ver, base`). Merge is a 3-way merge (base/local/remote) keyed by `id`/`k` — keep ids stable.

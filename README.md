@@ -19,12 +19,13 @@ In the app, tap **?** (top right) for this guide or **Start tour** for a step-by
 | Documents | Grouped by stage: Before departure, At departure, In transit, On arrival, Return trip. Add your own stages. Red expiry date if it expires within 6 months of your return |
 | Itinerary | Date, time, place, area, est. cost, notes; one chip per day |
 | Money | Brought vs Spent, multi-currency, per-trip rates, money left, per-day allowance, spending by category |
+| Notes | Cards for hotel address & phone, contacts, flights, emergency numbers, Wi-Fi. Templates or blank, any fields. **Copy** on every value, **Call** for phone numbers, **Map** for addresses |
 | Custom columns | Tap **+** at the end of the headers to add Text / Number / Date columns per tab |
 
 ## Spreadsheet-style editing
 - Tap any cell to type. **Enter** moves to the next row (and adds one at the end). **Shift+Enter** moves up.
 - Paste rows copied from Google Sheets or Excel into a cell to add many rows at once. Tab-separated values fill the columns.
-- Tap a header to sort. Use search, the chips and **Hide done** to filter.
+- Tap a header to sort. Rows then stay in place while you type; tap the header again to re-sort. Use search, the chips and **Hide done** to filter.
 - Delete a row with **×** or **Ctrl/⌘+Backspace**. Every delete can be undone from the toast.
 
 ## Offline, backup and sharing

@@ -77,8 +77,8 @@ button{cursor:pointer;touch-action:manipulation}
 
 /* tabs */
 .tabs{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;margin-top:6px}
-.seg{position:relative;display:grid;grid-template-columns:repeat(4,1fr);background:var(--panel);border-radius:12px;padding:3px}
-.seg .ind{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/4);background:var(--bg);border-radius:9px;box-shadow:var(--shadow);transition:transform .28s var(--ease-out)}
+.seg{position:relative;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:var(--panel);border-radius:12px;padding:3px}
+.seg .ind{position:absolute;top:3px;bottom:3px;left:3px;width:calc((100% - 6px)/5);background:var(--bg);border-radius:9px;box-shadow:var(--shadow);transition:transform .28s var(--ease-out)}
 .tab{position:relative;border:0;background:none;min-height:40px;font-weight:500;font-size:15px;color:var(--mute);transition:color .2s}
 .tab.on{color:var(--ink)}
 .tab small{font-variant-numeric:tabular-nums;opacity:.7;margin-left:4px;font-size:12.5px}
@@ -225,6 +225,44 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
 #tourPop .dots{display:flex;gap:4px;margin:0 0 12px}
 #tourPop .dots i{height:4px;flex:1;border-radius:4px;background:var(--line);transition:background-color .2s}
 #tourPop .dots i.on{background:var(--accent)}
+/* tabs short labels + notes */
+.tab .sm{display:none}
+.ncards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:10px;align-items:start}
+.ncard{background:var(--panel);border-radius:16px;padding:12px 14px 8px;cursor:pointer;transition:transform .16s var(--ease-out)}
+.ncard:active{transform:scale(.99)}
+.ncard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ncard header{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.ncard h3{margin:0;font-size:17px;flex:1;overflow-wrap:anywhere;letter-spacing:-.01em}
+.nedit{border:0;background:var(--bg);border-radius:8px;min-height:36px;padding:0 12px;font-size:14px;font-weight:500;color:var(--mute);transition:transform .16s var(--ease-out)}
+.nedit:active{transform:scale(.97)}
+.nf{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;padding:8px 0;border-top:1px solid var(--line);align-items:center}
+.nk{grid-column:1/-1;font-size:12.5px;color:var(--mute)}
+.nv{font-size:16px;overflow-wrap:anywhere;white-space:pre-wrap;cursor:text;user-select:text}
+.na{display:flex;gap:4px}
+.mini{border:0;background:var(--bg);color:var(--accent);border-radius:8px;min-height:36px;min-width:48px;padding:0 10px;font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;transition:transform .16s var(--ease-out)}
+.mini:active{transform:scale(.97)}
+.ntext{margin:0;font-size:15px;white-space:pre-wrap;overflow-wrap:anywhere;border-top:1px solid var(--line);padding:8px 0 4px}
+.nhint{font-size:14px;color:var(--mute);margin:4px 0 6px}
+.nempty{background:var(--panel);border-radius:16px;padding:20px;text-align:center;color:var(--mute);font-size:15px}
+.nempty p{margin:0 auto;max-width:520px}
+.tplrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.tplrow .chip{background:var(--bg)}
+.tplgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:6px}
+.tplgrid button{text-align:left;border:0;background:var(--panel);border-radius:12px;padding:12px;min-height:64px;transition:transform .16s var(--ease-out)}
+.tplgrid button:active{transform:scale(.97)}
+.tplgrid b{display:block;font-size:15px}.tplgrid small{color:var(--mute);font-size:13px}
+.nrow{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.5fr) 40px;gap:6px;margin-bottom:6px;align-items:center}
+.nrow input{min-height:44px;border:0;border-radius:10px;background:var(--panel);padding:0 10px;font-size:16px;outline:none;width:100%}
+.nrow input:focus{box-shadow:0 0 0 2px var(--accent)}
+.nrow .ek{color:var(--mute)}
+.nrm{width:40px;height:40px;border:0;background:none;border-radius:8px;color:var(--mute);font-size:20px;transition:transform .16s var(--ease-out)}
+.nrm:active{transform:scale(.9)}
+@media(hover:hover) and (pointer:fine){.nrm:hover{color:var(--stamp)}.ncard:hover{box-shadow:inset 0 0 0 1px var(--line)}}
+#ne-text{font:inherit;font-size:16px;min-height:96px;padding:10px 12px}
+@media(max-width:600px){.tab .lg{display:none}.tab .sm{display:inline}
+ .nrow{grid-template-columns:minmax(0,1fr) 40px;grid-template-areas:"k x" "v v";gap:4px;padding:8px 0;margin:0;border-top:1px solid var(--line)}
+ .nrow .ek{grid-area:k;min-height:36px;background:none;padding:0 2px;font-size:14px}
+ .nrow .ev{grid-area:v}.nrow .nrm{grid-area:x}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
 </style>
 </head>
@@ -253,7 +291,7 @@ table.g{border-collapse:separate;border-spacing:0;width:100%;min-width:640px}
    e.g. const SYNC_URL = 'https://tripkit-sync.yourname.workers.dev';
    Leave empty to type it inside the app instead (Trips → Sync between devices). */
 const SYNC_URL = 'https://tripkit-sync.qitmahendra.workers.dev';
-const APP_VERSION = '6';
+const APP_VERSION = '7';
 
 const KEY='tripkit.v1';
 const $=s=>document.querySelector(s);
@@ -264,7 +302,7 @@ const todayISO=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6
 const framed=(()=>{try{return window.self!==window.top}catch(e){return true}})();
 
 const STAGES=['Before departure','At departure','In transit','On arrival','Return trip'];
-const TABS=[{k:'pack',l:'Packing',m:'Packed'},{k:'docs',l:'Documents',m:'Docs'},{k:'plan',l:'Itinerary',m:'Plan'},{k:'money',l:'Money',m:'Budget'}];
+const TABS=[{k:'pack',l:'Packing',sh:'Pack'},{k:'docs',l:'Documents',sh:'Docs'},{k:'plan',l:'Itinerary',sh:'Plan'},{k:'money',l:'Money',sh:'Money'},{k:'notes',l:'Notes',sh:'Notes'}];
 const MCATS=['Transport','Lodging','Food','Activities','Shopping','Work','Other'];
 const COLS={
  pack:[{k:'done',t:'check',l:'Go'},{k:'back',t:'check',l:'Back'},{k:'name',l:'Item',w:180},{k:'cat',l:'Category',list:['Clothes','Toiletries','Electronics','Health','Work','Essentials','Misc'],w:120},{k:'qty',l:'Qty',t:'num',w:64},{k:'bag',l:'Bag',list:['Carry-on','Checked','Backpack','Wear it'],w:110},{k:'note',l:'Notes',w:160}],
@@ -343,7 +381,7 @@ function save(now){clearTimeout(saveT);const go=()=>{try{localStorage.setItem(KE
 let S=load();
 if(!S||!Array.isArray(S.trips)||!S.trips.length){const z=shenzhen();S={v:1,trips:[z],cur:z.id,tab:'docs'}}
 else if(!S.trips.some(t=>t.seed==='szx')){const z=shenzhen();S.trips.unshift(z);S.cur=z.id;S.tab='docs'}
-const view={q:'',hide:false,chip:{},sort:{plan:{k:'date',d:1}}};
+const view={q:'',hide:false,chip:{},sort:{plan:{k:'date',d:1}},order:{},resort:{}};
 const trip=()=>S.trips.find(t=>t.id===S.cur)||S.trips[0];
 
 /* ---------- formatting ---------- */
@@ -385,13 +423,32 @@ function renderPass(){
 function renderTabs(){
  const t=trip(),s=stats(t),i=TABS.findIndex(x=>x.k===S.tab);
  $('#seg').innerHTML=`<div class="ind" style="transform:translateX(${i*100}%)"></div>`+TABS.map(x=>{
-  const c=x.k==='money'?t.money.length:`${s[x.k].d}/${s[x.k].n}`;
-  return `<button class="tab${x.k===S.tab?' on':''}" role="tab" aria-selected="${x.k===S.tab}" data-tab="${x.k}">${x.l}<small>${c}</small></button>`}).join('');
+  const c=x.k==='money'?t.money.length:x.k==='notes'?notesOf(t).length:`${s[x.k].d}/${s[x.k].n}`;
+  return `<button class="tab${x.k===S.tab?' on':''}" role="tab" aria-selected="${x.k===S.tab}" data-tab="${x.k}"><span class="lg">${x.l}</span><span class="sm">${x.sh}</span><small>${c}</small></button>`}).join('');
 }
 
 /* ---------- render: panel ---------- */
+/* Sorting is applied only when a header is tapped (or a list is first opened); after that the order is frozen,
+   so rows never jump while you type. New rows stay right where they were added. */
+function ordered(t,tab){
+ const arr=t[tab],so=view.sort[tab],key=t.id+':'+tab;
+ if(!so){delete view.order[key];return arr.slice()}
+ if(!view.order[key]||view.resort[key]){
+  const col=colsFor(t,tab).find(c=>c.k===so.k);const isN=col&&col.t==='num';
+  const rows=arr.slice().sort((a,b)=>{const av=a[so.k]??'',bv=b[so.k]??'';
+   if(av===''&&bv!=='')return 1;if(bv===''&&av!=='')return -1;
+   let r=isN?num(av)-num(bv):String(av).localeCompare(String(bv));
+   if(!r&&tab==='plan')r=String(a.time||'').localeCompare(String(b.time||''));
+   return r*so.d});
+  view.order[key]=rows.map(r=>r.id);view.resort[key]=false;return rows;
+ }
+ const pos=new Map(view.order[key].map((id,i)=>[id,i]));let last=-1;const rank=new Map();
+ arr.forEach((r,i)=>{if(pos.has(r.id)){last=pos.get(r.id);rank.set(r.id,last)}else rank.set(r.id,last+0.5+i*1e-6)});
+ const rows=arr.slice().sort((a,b)=>rank.get(a.id)-rank.get(b.id));
+ view.order[key]=rows.map(r=>r.id);return rows;
+}
 function rowsFor(tab){
- const t=trip();let rows=t[tab].slice();
+ const t=trip();let rows=ordered(t,tab);
  const g=GROUP[tab],chip=view.chip[tab];
  if(chip)rows=rows.filter(r=>(r[g]||'')===chip);
  const ck=CK(tab,t);
@@ -399,13 +456,6 @@ function rowsFor(tab){
  if(view.missing&&t.leg==='back'&&(tab==='pack'||tab==='docs'))rows=rows.filter(r=>r.done&&!r.back);
  const q=view.q.trim().toLowerCase();
  if(q)rows=rows.filter(r=>Object.entries(r).some(([k,v])=>k!=='id'&&String(v).toLowerCase().includes(q)));
- const so=view.sort[tab];
- if(so){const col=colsFor(t,tab).find(c=>c.k===so.k);const isN=col&&col.t==='num';
-  rows.sort((a,b)=>{const av=a[so.k]??'',bv=b[so.k]??'';
-   if(av===''&&bv!=='')return 1;if(bv===''&&av!=='')return -1;
-   let r=isN?num(av)-num(bv):String(av).localeCompare(String(bv));
-   if(!r&&tab==='plan')r=String(a.time||'').localeCompare(String(b.time||''));
-   return r*so.d})}
  return rows;
 }
 function cellHTML(tab,c,r,t){
@@ -418,18 +468,15 @@ function cellHTML(tab,c,r,t){
  return `<td${warn?' class="exp-warn" title="Expires within 6 months of your trip"':''}><input type="${type}" data-k="${c.k}" value="${esc(v)}"${c.t==='num'?' inputmode="decimal" class="n"':''}${c.list?` list="dl-${tab}-${c.k}"`:''} aria-label="${esc(c.l)}" autocomplete="off" spellcheck="false"></td>`;
 }
 function renderPanel(){
+ if(S.tab==='notes'){renderNotes();return}
  const t=trip(),tab=S.tab,cols=colsFor(t,tab),g=GROUP[tab],ck=CK(tab,t),two=tab==='pack'||tab==='docs';
  const all=t[tab],rows=rowsFor(tab);
- const groups=[];all.forEach(r=>{const v=r[g]||'';if(v&&!groups.includes(v))groups.push(v)});
- if(tab==='docs')groups.sort((a,b)=>(STAGES.indexOf(a)+99*(STAGES.indexOf(a)<0))-(STAGES.indexOf(b)+99*(STAGES.indexOf(b)<0)));
- if(tab==='plan')groups.sort();
+ const groups=groupsFor(t,tab);
  if(view.chip[tab]&&!groups.includes(view.chip[tab]))view.chip[tab]='';
- const label=v=>tab==='plan'?fmtD(v):v;
- const cnt=v=>{const a=all.filter(r=>(r[g]||'')===v);return tab==='money'?a.length:`${a.filter(r=>r[ck]).length}/${a.length}`};
- const chips=groups.length>1?`<div class="chips">${[''].concat(groups).map(v=>`<button class="chip${(view.chip[tab]||'')===v?' on':''}" data-chip="${esc(v)}">${v?esc(label(v)):'All'}${v?`<small>${cnt(v)}</small>`:''}</button>`).join('')}</div>`:'';
+ const chips=`<div class="chips" id="chips"${groups.length>1?'':' hidden'}>${chipsHTML(t,tab,groups)}</div>`;
  const s=stats(t);
  const prog=tab==='money'?'':`<div class="prog" id="prog">${progText(tab,s)}</div>`;
- const lists=cols.filter(c=>c.list).map(c=>{const vals=[...new Set([...c.list,...all.map(r=>r[c.k]).filter(Boolean)])];return `<datalist id="dl-${tab}-${c.k}">${vals.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`}).join('');
+ const lists=`<div id="lists">${listsHTML(t,tab)}</div>`;
  const so=view.sort[tab]||{};
  const head=cols.map(c=>c.t==='check'?`<th class="ck${c.k==='back'?' ck2':''}${two&&c.k===ck?' act':''}">${c.l||''}</th>`:`<th class="s${so.k===c.k?' sorted':''}" data-sort="${esc(c.k)}" style="min-width:${c.w}px">${esc(c.l)}<span class="ar">${so.k===c.k?(so.d>0?'↑':'↓'):'↕'}</span></th>`).join('')+'<th class="x"><button class="addcol" data-act="cols" aria-label="Add or edit columns" title="Add / edit columns">+</button></th>';
  const body=rows.map(r=>`<tr data-id="${r.id}"${r[ck]?' class="done"':''}>${cols.map(c=>cellHTML(tab,c,r,t)).join('')}<td class="x"><button class="del" data-act="del" aria-label="Delete row">×</button></td></tr>`).join('');
@@ -444,6 +491,20 @@ function renderPanel(){
   <span class="hint">Enter = next row · paste lines from a sheet to add many</span></div>${lists}
   ${t.seed==='szx'&&!t.start?'<p class="sample">Prefilled for Jakarta → Singapore → Shenzhen. Add your dates in Trips → Edit current, and set CNY / SGD rates in Money.</p>':''}`;
 }
+function groupsFor(t,tab){
+ const g=GROUP[tab],groups=[];t[tab].forEach(r=>{const v=r[g]||'';if(v&&!groups.includes(v))groups.push(v)});
+ if(tab==='docs')groups.sort((a,b)=>(STAGES.indexOf(a)+99*(STAGES.indexOf(a)<0))-(STAGES.indexOf(b)+99*(STAGES.indexOf(b)<0)));
+ if(tab==='plan')groups.sort();
+ return groups;
+}
+function chipsHTML(t,tab,groups){
+ const g=GROUP[tab],ck=CK(tab,t),all=t[tab],label=v=>tab==='plan'?fmtD(v):v;
+ const cnt=v=>{const a=all.filter(r=>(r[g]||'')===v);return tab==='money'?a.length:`${a.filter(r=>r[ck]).length}/${a.length}`};
+ return [''].concat(groups).map(v=>`<button class="chip${(view.chip[tab]||'')===v?' on':''}" data-chip="${esc(v)}">${v?esc(label(v)):'All'}${v?`<small>${cnt(v)}</small>`:''}</button>`).join('');
+}
+function listsHTML(t,tab){const all=t[tab];return colsFor(t,tab).filter(c=>c.list).map(c=>{const vals=[...new Set([...c.list,...all.map(r=>r[c.k]).filter(Boolean)])];return `<datalist id="dl-${tab}-${c.k}">${vals.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`}).join('')}
+/* Update chips + suggestions in place — never redraw or re-sort rows while someone is typing */
+function refreshSide(){const t=trip(),tab=S.tab;if(!COLS[tab])return;const c=$('#chips');if(c){const groups=groupsFor(t,tab);c.innerHTML=chipsHTML(t,tab,groups);c.hidden=groups.length<2}const l=$('#lists');if(l)l.innerHTML=listsHTML(t,tab)}
 function legHTML(t,tab,s){
  const nMiss=tab==='pack'?s.missPack:s.missDocs;
 return `<div class="legbar"><div class="seg2 leg" role="group" aria-label="Which way"><button class="${t.leg!=='back'?'on':''}" data-leg="go">Going</button><button class="${t.leg==='back'?'on':''}" data-leg="back">Going home</button></div>${t.leg==='back'?`<button class="chip miss${view.missing?' on':''}" data-act="missing">Missing${nMiss?`<small>${nMiss}</small>`:''}</button><span class="hint">${nMiss?`${nMiss} brought but not packed back yet`:'Everything you brought is packed back'}</span>`:'<span class="hint">Tick <b>Go</b> now, <b>Back</b> when packing to return</span>'}</div>`;
@@ -464,6 +525,74 @@ function moneySummary(t,s){
 }
 function renderAll(){renderPass();renderTabs();renderPanel();save()}
 function refreshStats(){renderPass();renderTabs();const t=trip(),s=stats(t);const lb=$('.legbar');if(lb)lb.outerHTML=legHTML(t,S.tab,s);const p=$('#prog');if(p)p.textContent=progText(S.tab,s);if(S.tab==='money'){const ms=$('#msum'),a=document.activeElement,rk=a?.dataset?.rate;ms.innerHTML=moneySummary(t,s);if(rk){const el=ms.querySelector(`[data-rate="${CSS.escape(rk)}"]`);if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}}}}
+
+/* ---------- notes (cards) ---------- */
+const notesOf=t=>t.notes||(t.notes=[]);
+const NOTE_TPL=[
+ {key:'hotel',title:'Hotel',d:'Address, phone, check-in',items:['Name','Address','Address (local language)','Phone','Check-in / out','Booking ref']},
+ {key:'contact',title:'Contact',d:'Person, phone, email',items:['Name','Phone','Email','Role']},
+ {key:'flight',title:'Flight',d:'Flight no., terminal, seat',items:['Airline','Flight no.','Departs','Terminal / gate','Seat','Booking ref']},
+ {key:'emergency',title:'Emergency',d:'Embassy, insurance',items:['Local emergency number','Embassy / consulate','Embassy phone','Insurance hotline','Policy number']},
+ {key:'wifi',title:'Wi-Fi',d:'Network and password',items:['Network','Password']},
+ {key:'blank',title:'',d:'Start empty',items:[]}];
+const isPhone=v=>/^[+(]?\d[\d\s\-().]{5,}$/.test(v)&&v.replace(/\D/g,'').length>=6;
+const isMail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+const isWeb=v=>/^https?:\/\/\S+$/i.test(v);
+const isAddr=k=>/address|alamat|location|lokasi|venue|地址/i.test(k||'');
+function fieldActions(f){
+ const v=f.v,out=[`<button class="mini" data-act="ncopy" data-v="${esc(v)}" aria-label="Copy ${esc(f.k||'value')}">Copy</button>`];
+ if(isPhone(v))out.push(`<a class="mini" href="tel:${esc(v.replace(/[^\d+]/g,''))}">Call</a>`);
+ else if(isMail(v))out.push(`<a class="mini" href="mailto:${esc(v)}">Email</a>`);
+ else if(isWeb(v))out.push(`<a class="mini" href="${esc(v)}" target="_blank" rel="noopener">Open</a>`);
+ else if(isAddr(f.k))out.push(`<a class="mini" href="https://www.google.com/maps/search/?api=1&amp;query=${esc(encodeURIComponent(v))}" target="_blank" rel="noopener">Map</a>`);
+ return out.join('');
+}
+function noteCard(n){
+ const filled=(n.items||[]).filter(f=>String(f.v||'').trim());
+ return `<article class="ncard" data-nid="${esc(n.id)}" tabindex="0" aria-label="${esc(n.title||'Note')}">
+  <header><h3>${esc(n.title||'Untitled')}</h3><button class="nedit" data-act="nedit" aria-label="Edit ${esc(n.title||'note')}">Edit</button></header>
+  ${filled.map(f=>`<div class="nf"><div class="nk">${esc(f.k||'')}</div><div class="nv">${esc(f.v)}</div><div class="na">${fieldActions(f)}</div></div>`).join('')}
+  ${n.text?`<p class="ntext">${esc(n.text)}</p>`:''}
+  ${!filled.length&&!n.text?'<p class="nhint">Tap to fill in</p>':''}
+ </article>`;
+}
+function renderNotes(){
+ const t=trip(),all=notesOf(t),q=view.q.trim().toLowerCase();
+ const list=q?all.filter(n=>JSON.stringify([n.title,n.text,(n.items||[]).map(f=>[f.k,f.v])]).toLowerCase().includes(q)):all;
+ const tpl=NOTE_TPL.filter(x=>x.key!=='blank').map(x=>`<button class="chip" data-act="ntpl" data-tpl="${x.key}">+ ${x.title}</button>`).join('');
+ $('#panel').innerHTML=`<div class="tools"><input class="search" id="q" type="search" placeholder="Search notes…" value="${esc(view.q)}" aria-label="Search notes"><button class="btn pri" data-act="nadd">+ Add note</button></div>
+  ${list.length?`<div class="ncards">${list.map(noteCard).join('')}</div>`:all.length?'<div class="empty">No notes match your search.</div>':
+  `<div class="nempty"><p>Keep the details you need at hand — hotel address, contacts, flights, Wi-Fi. Tap a value’s <b>Copy</b> to paste it into a ride app, or show it to a taxi driver.</p><div class="tplrow">${tpl}</div></div>`}`;
+}
+function noteTplSheet(){
+ openSheet(`<h2>New note</h2><div class="tplgrid">${NOTE_TPL.map(x=>`<button data-s="ntpl-${x.key}"><b>${x.title||'Blank'}</b><small>${x.d}</small></button>`).join('')}</div><div class="acts"><button class="btn ghost" data-s="close">Cancel</button></div>`);
+}
+const noteRow=f=>`<div class="nrow" data-fid="${esc(f.id)}"><input class="ek" value="${esc(f.k||'')}" placeholder="Label" aria-label="Field label" autocomplete="off"><input class="ev" value="${esc(f.v||'')}" placeholder="Value" aria-label="${esc(f.k||'Value')}" autocomplete="off"><button class="nrm" data-s="ne-delrow" aria-label="Remove field">×</button></div>`;
+function noteEditor(id,tplKey){
+ const t=trip();let n;
+ if(id){n=notesOf(t).find(x=>x.id===id);if(!n)return}
+ else{const tp=NOTE_TPL.find(x=>x.key===tplKey)||NOTE_TPL.at(-1);n={title:tp.title,items:tp.items.map(k=>({id:uid(),k,v:''})),text:''}}
+ openSheet(`<h2>${id?'Edit note':'New note'}</h2>
+  <div class="f"><label for="ne-title">Title</label><input id="ne-title" value="${esc(n.title||'')}" placeholder="e.g. Hotel" autocomplete="off"></div>
+  <div class="f"><label>Details</label><div id="ne-rows">${(n.items||[]).map(noteRow).join('')}</div><button class="btn ghost" data-s="ne-addrow" style="justify-self:start">+ Add field</button></div>
+  <div class="f"><label for="ne-text">Notes</label><textarea id="ne-text" placeholder="Anything else — directions, opening hours…">${esc(n.text||'')}</textarea></div>
+  <div class="acts">${id?'<button class="btn danger" data-s="ne-del" style="margin-right:auto">Delete</button>':''}<button class="btn ghost" data-s="close">Cancel</button><button class="btn pri" data-s="ne-save">Save</button></div>`);
+ sh.dataset.nid=id||'';
+ if(!id&&n.items.length)setTimeout(()=>sh.querySelector('.ev')?.focus({preventScroll:true}),80);
+}
+function noteAction(a,b){
+ const t=trip(),list=notesOf(t),id=sh.dataset.nid;
+ if(a.startsWith('ntpl-')){noteEditor(null,a.slice(5));return}
+ if(a==='ne-addrow'){$('#ne-rows').insertAdjacentHTML('beforeend',noteRow({id:uid(),k:'',v:''}));const r=$('#ne-rows').lastElementChild;r.querySelector('.ek').focus();return}
+ if(a==='ne-delrow'){b.closest('.nrow')?.remove();return}
+ if(a==='ne-save'){
+  const title=$('#ne-title').value.trim(),text=$('#ne-text').value.trim();
+  const items=[...sh.querySelectorAll('.nrow')].map(r=>({id:r.dataset.fid||uid(),k:r.querySelector('.ek').value.trim(),v:r.querySelector('.ev').value.trim()})).filter(f=>f.k||f.v);
+  if(id){const n=list.find(x=>x.id===id);if(n){n.title=title;n.items=items;n.text=text}}
+  else{if(!title&&!items.some(f=>f.v)&&!text){closeSheet();return}list.push({id:uid(),title,items,text})}
+  closeSheet();renderAll();toast(id?'Note saved':'Note added');return}
+ if(a==='ne-del'){const i=list.findIndex(x=>x.id===id);if(i<0)return;const [n]=list.splice(i,1);closeSheet();renderAll();toast(`Deleted “${(n.title||'note').slice(0,28)}”`,'Undo',()=>{list.splice(i,0,n);renderAll()})}
+}
 
 /* ---------- row ops ---------- */
 function newRow(tab,from){
@@ -503,15 +632,18 @@ P.addEventListener('input',e=>{
 P.addEventListener('change',e=>{
  const el=e.target;
  if(el.id==='hide'){view.hide=el.checked;renderPanel();return}
- if(el.dataset.k&&el.dataset.k===GROUP[S.tab]||el.dataset.k==='date'&&S.tab==='plan'){renderPass();renderTabs();refreshChips()}
+ if(el.dataset.k&&el.closest('tr[data-id]')){renderPass();renderTabs();refreshSide()}
 });
-function refreshChips(){const a=document.activeElement,tr=a?.closest?.('tr[data-id]'),k=a?.dataset?.k;renderPanel();if(tr&&k)focusCell(tr.dataset.id,k)}
 function updCalcs(){const t=trip();document.querySelectorAll('[data-calc]').forEach(td=>{const r=t.money.find(x=>x.id===td.dataset.calc);if(!r)return;const h=conv(t,r.amt,r.cur);td.textContent=h===null?(num(r.amt)?'Set rate':''):(num(r.amt)?money(h,t.home):'');td.classList.toggle('warn',h===null&&!!num(r.amt))})}
 P.addEventListener('click',e=>{
  const b=e.target.closest('button,th[data-sort]');if(!b)return;
  if(b.dataset.chip!==undefined){view.chip[S.tab]=b.dataset.chip;renderPanel();return}
- if(b.dataset.sort){const k=b.dataset.sort,cur=view.sort[S.tab];view.sort[S.tab]=!cur||cur.k!==k?{k,d:1}:cur.d===1?{k,d:-1}:null;renderPanel();return}
+ if(b.dataset.sort){const k=b.dataset.sort,cur=view.sort[S.tab];view.sort[S.tab]=!cur||cur.k!==k?{k,d:1}:cur.d===1?{k,d:-1}:null;view.resort[trip().id+':'+S.tab]=true;renderPanel();return}
  const act=b.dataset.act,tr=b.closest('tr[data-id]');
+ if(act==='nadd'){noteTplSheet();return}
+ if(act==='ntpl'){noteEditor(null,b.dataset.tpl);return}
+ if(act==='nedit'){noteEditor(b.closest('[data-nid]')?.dataset.nid);return}
+ if(act==='ncopy'){copy(b.dataset.v,'Copied');return}
  if(act==='add'){const rows=rowsFor(S.tab);addRow(rows.at(-1)?.id);return}
  if(act==='del'&&tr){delRow(tr.dataset.id);return}
  if(act==='chk'&&tr){const k=b.dataset.ck||'done',ck=CK(S.tab),r=trip()[S.tab].find(x=>x.id===tr.dataset.id);r[k]=!r[k];b.setAttribute('aria-pressed',r[k]);tr.classList.toggle('done',!!r[ck]);save();refreshStats();
@@ -522,7 +654,9 @@ P.addEventListener('click',e=>{
  if(act==='cleardone'){const k=CK(S.tab),arr=trip()[S.tab],prev=arr.filter(r=>r[k]).map(r=>r.id);if(!prev.length)return;arr.forEach(r=>r[k]=false);renderAll();
   toast(`Unchecked ${prev.length} items`,'Undo',()=>{arr.forEach(r=>{if(prev.includes(r.id))r[k]=true});renderAll()})}
 });
+P.addEventListener('click',e=>{if(e.target.closest('button,a,input'))return;const c=e.target.closest('.ncard[data-nid]');if(c&&!getSelection().toString())noteEditor(c.dataset.nid)});
 P.addEventListener('keydown',e=>{
+ if(e.key==='Enter'&&e.target.matches?.('.ncard[data-nid]')){e.preventDefault();noteEditor(e.target.dataset.nid);return}
  const el=e.target,tr=el.closest('tr[data-id]');if(!tr||!el.dataset.k)return;
  const k=el.dataset.k,rows=[...P.querySelectorAll('tbody tr[data-id]')],i=rows.indexOf(tr);
  const move=d=>{const n=rows[i+d];if(n){const x=n.querySelector(`[data-k="${k}"]`);x.focus();if(x.select&&x.type==='text')x.select();return true}return false};
@@ -551,7 +685,7 @@ P.addEventListener('paste',e=>{
 const goTab=k=>{if(!k||k===S.tab)return;S.tab=k;view.q='';renderAll();window.scrollTo({top:Math.min(window.scrollY,$('#pass').offsetHeight+20)})};
 $('#pass').addEventListener('click',e=>goTab(e.target.closest('[data-tab]')?.dataset.tab));
 $('#seg').addEventListener('click',e=>goTab(e.target.closest('[data-tab]')?.dataset.tab));
-$('#seg').addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const i=TABS.findIndex(x=>x.k===S.tab),n=TABS[(i+(e.key==='ArrowRight'?1:3))%4].k;goTab(n);$(`.tab[data-tab="${n}"]`)?.focus()});
+$('#seg').addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const i=TABS.findIndex(x=>x.k===S.tab),n=TABS[(i+(e.key==='ArrowRight'?1:TABS.length-1))%TABS.length].k;goTab(n);$(`.tab[data-tab="${n}"]`)?.focus()});
 
 /* ---------- sheet ---------- */
 const ov=$('#ov'),sh=$('#sheet');let lastFocus=null;
@@ -602,6 +736,7 @@ function doImport(txt){
   const clean=ts.filter(t=>t&&typeof t==='object').map(t=>{const o={id:uid(),name:String(t.name||'Imported trip'),from:String(t.from||''),to:String(t.to||''),via:String(t.via||''),start:String(t.start||''),end:String(t.end||''),kind:t.kind==='business'?'business':'vacation',scope:t.scope==='abroad'?'abroad':'domestic',home:String(t.home||'IDR').slice(0,3).toUpperCase(),rates:{}};
    for(const[k,v]of Object.entries(t.rates||{}))o.rates[String(k).slice(0,5)]=String(v);
    o.leg=t.leg==='back'?'back':'go';o.cols={};
+   o.notes=(Array.isArray(t.notes)?t.notes:[]).filter(n=>n&&typeof n==='object').map(n=>({id:uid(),title:String(n.title||'').slice(0,120),text:String(n.text||'').slice(0,5000),items:(Array.isArray(n.items)?n.items:[]).map(f=>({id:uid(),k:String(f?.k||'').slice(0,80),v:String(f?.v||'').slice(0,1000)}))}));
    for(const tab of ['pack','docs','plan','money'])o.cols[tab]=(Array.isArray(t.cols?.[tab])?t.cols[tab]:[]).filter(c=>/^c_[a-z0-9]{1,12}$/.test(c?.k)).map(c=>({k:c.k,l:String(c.l||'Column').slice(0,40),t:['num','date'].includes(c.t)?c.t:'text'}));
    for(const tab of ['pack','docs','plan','money'])o[tab]=(Array.isArray(t[tab])?t[tab]:[]).map(r=>{const n={id:uid()};colsFor(o,tab).forEach(c=>{if(c.t==='check')n[c.k]=!!r?.[c.k];else if(c.t!=='calc')n[c.k]=String(r?.[c.k]??'')});return n});
    return o});
@@ -614,6 +749,7 @@ function asText(t){
  L.push('','PACKING  [Go|Back]');t.pack.forEach(r=>L.push(box2(r)+r.name+(r.qty?` ×${r.qty}`:'')));
  STAGES.concat([...new Set(t.docs.map(r=>r.stage).filter(s=>!STAGES.includes(s)))]).forEach(st=>{const a=t.docs.filter(r=>(r.stage||'Before departure')===st);if(a.length){L.push('','DOCUMENTS — '+st.toUpperCase());a.forEach(r=>L.push(box2(r)+r.name))}});
  if(t.plan.length){L.push('','ITINERARY');t.plan.slice().sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)).forEach(r=>L.push(box(r)+[fmtD(r.date),r.time,r.name,r.area&&`(${r.area})`].filter(Boolean).join(' ')))}
+ const nl=notesOf(t);if(nl.length){L.push('','NOTES');nl.forEach(n=>{L.push('— '+(n.title||'Note'));(n.items||[]).filter(f=>f.v).forEach(f=>L.push(`   ${f.k?f.k+': ':''}${f.v}`));if(n.text)L.push('   '+n.text.replace(/\n/g,'\n   '))})}
  const s=stats(t);L.push('',`MONEY — brought ${money(s.br,t.home)}, spent ${money(s.sp,t.home)}, left ${money(s.left,t.home)}`);
  return L.join('\n');
 }
@@ -634,6 +770,7 @@ sh.addEventListener('click',e=>{
  else if(a==='import')importSheet();
  else if(a==='tour')startTour();
  else if(a==='sync')syncSheet();
+ else if(a.startsWith('ne-')||a.startsWith('ntpl-'))noteAction(a,b);
  else if(a.startsWith('sync-'))syncAction(a,b);
  else if(a==='file')$('#fileIn').click();
  else if(a==='doimport')doImport($('#imp').value);
@@ -654,7 +791,8 @@ function colsSheet(){
  <div class="acts"><button class="btn ghost" data-s="close">Done</button><button class="btn pri" data-s="coladd">Add column</button></div>`);
 }
 sh.addEventListener('input',e=>{const k=e.target.dataset?.colren;if(!k)return;const c=(trip().cols?.[S.tab]||[]).find(x=>x.k===k);if(c){c.l=e.target.value.slice(0,40)||'Column';save();renderPanel()}});
-sh.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='nc-name'){e.preventDefault();sh.querySelector('[data-s=coladd]').click()}});
+sh.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.classList?.contains('ev')){e.preventDefault();const r=e.target.closest('.nrow').nextElementSibling;if(r)r.querySelector('.ev').focus();else sh.querySelector('[data-s=ne-save]').click();return}
+ if(e.key==='Enter'&&e.target.id==='nc-name'){e.preventDefault();sh.querySelector('[data-s=coladd]').click()}});
 
 /* ---------- help + guided tour ---------- */
 function helpSheet(){
@@ -665,6 +803,7 @@ function helpSheet(){
  <h3>3. Coming home: Going home</h3><p>Before you return, switch to <b>Going home</b> and tick <b>Back</b>. Tap <b>Missing</b> to list everything you brought but haven’t packed back yet. Bought something on the trip? Add a row and tick only Back.</p>
  <h3>4. Documents by stage</h3><p>Chips group documents into Before departure, At departure, In transit, On arrival and Return trip. Type your own stage in “When needed” to make a new group. A red expiry date means it runs out within 6 months of your return.</p>
  <h3>5. Itinerary</h3><p>Add places with date, time, area and estimated cost. Sorted by date; tick places you visited. Date chips show one day at a time.</p>
+ <h3>Notes</h3><p>The <b>Notes</b> tab keeps details as cards: hotel address and phone, contacts, flights, emergency numbers, Wi-Fi. Pick a template or start blank, add any fields you like. Each value has <b>Copy</b>; phone numbers get <b>Call</b> and addresses get <b>Map</b>. Tip: add the hotel address in the local language to show a taxi driver.</p>
  <h3>6. Money</h3><ul><li><b>Brought</b> = cash or budget you take; <b>Spent</b> = what you pay.</li><li>Use any currency code (CNY, SGD…) and set its rate once under Exchange rates — totals convert to your home currency, offline.</li><li>See what’s left, a per-day allowance and spending by category.</li></ul>
  <h3>7. Work like a spreadsheet</h3><ul><li>Tap any cell to type. <kbd>Enter</kbd> next row (adds one at the end), <kbd>Shift</kbd>+<kbd>Enter</kbd> up.</li><li>Copy rows from Google Sheets / Excel and paste into a cell to add many rows at once.</li><li>Tap a header to sort; use search, chips and “Hide done” to filter.</li><li>Tap <b>+</b> at the end of the headers to add your own column (text, number or date).</li><li>Delete with × at the end of a row — or <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>Backspace</kbd>. Every delete can be undone.</li></ul>
  <h3>8. Offline, backup and sharing</h3><ul><li>Everything is saved on this device only and works without internet once installed (Android: Chrome menu → Install app; iPhone: Share → Add to Home Screen).</li><li><b>Trips → Copy checklist as text</b> to send it on WhatsApp.</li><li><b>Trips → Download / Copy backup</b> before changing phones, then <b>Import backup</b> on the new one.</li></ul>
@@ -674,7 +813,7 @@ function helpSheet(){
 const TOUR=[
  ['#tripsBtn','Your trips','Switch trips, create a new one, edit the route, dates and transit, and back up your data.'],
  ['.pass','Trip card','Route, dates and countdown. Tap any of the four meters to jump straight to that list.'],
- ['#seg','Four lists','Packing, Documents, Itinerary and Money. The small numbers show how much is done.'],
+ ['#seg','Five sections','Packing, Documents, Itinerary, Money and Notes — cards for hotel address, contacts, flights and Wi-Fi.'],
  ['.legbar','Going or going home','Tick Go while packing at home. Before you return, switch to Going home and tap Missing to see anything not packed back yet.'],
  ['.chips','Quick filters','Filter by category (stage for documents, day for the itinerary). Type a new category in a row and its chip appears.'],
  ['table.g thead','Columns','Tap a header to sort. Tap + at the end to add your own column, like Weight or Booking ref.'],
